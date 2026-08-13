@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local read-only engine reference used during LayerForge development
+.yanengine-reference/
