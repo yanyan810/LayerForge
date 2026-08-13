@@ -146,6 +146,7 @@
 
   <ItemGroup>
     <ClInclude Include="AI\MaskData.h" />
+    <ClInclude Include="AI\MaskProcessor.h" />
     <ClInclude Include="AI\SegmentationModel.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="EditorUI.h" />
@@ -163,6 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AI\SegmentationModel.cpp" />
+    <ClCompile Include="AI\MaskProcessor.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="EditorUI.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />

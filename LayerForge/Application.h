@@ -5,6 +5,7 @@
 #include "ImageData.h"
 #include "ImageLoader.h"
 #include "AI/MaskData.h"
+#include "AI/MaskProcessor.h"
 #include "AI/SegmentationModel.h"
 
 #include <Windows.h>
@@ -19,6 +20,8 @@ private:
     void Shutdown();
     void OpenImage();
     void AnalyzeImage();
+    void RebuildDerivedLayers();
+    void ResetAnalysis();
     void OnResize(uint32_t width, uint32_t height);
     static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -29,10 +32,20 @@ private:
     ImageData image_;
     GraphicsDevice::Texture texture_;
     SegmentationModel segmentationModel_;
-    MaskData mask_;
-    GraphicsDevice::Texture maskTexture_;
+    MaskProcessor maskProcessor_;
+    MaskAdjustmentSettings maskSettings_;
+    MaskData rawMask_;
+    MaskData adjustedMask_;
+    ImageData foreground_;
+    ImageData background_;
+    GraphicsDevice::Texture rawMaskTexture_;
+    GraphicsDevice::Texture adjustedMaskTexture_;
+    GraphicsDevice::Texture foregroundTexture_;
+    GraphicsDevice::Texture backgroundTexture_;
     std::string error_;
     double inferenceMilliseconds_ = 0.0;
+    double maskUpdateMilliseconds_ = 0.0;
     bool analyzing_ = false;
+    bool maskUpdateRequested_ = false;
     bool initialized_ = false;
 };
