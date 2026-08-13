@@ -2,6 +2,7 @@
 
 #include "GraphicsDevice.h"
 #include "ImageData.h"
+#include "AI/MaskData.h"
 
 #include <Windows.h>
 #include <functional>
@@ -12,7 +13,8 @@ public:
     bool Initialize(HWND window, GraphicsDevice& graphics, std::string& error);
     void Shutdown();
     void BeginFrame();
-    void Draw(const ImageData* image, const GraphicsDevice::Texture* texture, const std::string& error, const std::function<void()>& openImage);
+    void Draw(const ImageData* image, const GraphicsDevice::Texture* texture, const MaskData* mask, const GraphicsDevice::Texture* maskTexture,
+        const std::string& error, bool analyzing, double inferenceMilliseconds, const std::function<void()>& openImage, const std::function<void()>& analyzeImage);
     void Render(ID3D12GraphicsCommandList* commandList);
 
 private:

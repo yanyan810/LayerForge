@@ -51,7 +51,8 @@ void EditorUI::Shutdown() {
 
 void EditorUI::BeginFrame() { ImGui_ImplDX12_NewFrame(); ImGui_ImplWin32_NewFrame(); ImGui::NewFrame(); }
 
-void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* texture, const std::string& error, const std::function<void()>& openImage) {
+void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* texture, const MaskData* mask, const GraphicsDevice::Texture* maskTexture,
+    const std::string& error, bool analyzing, double inferenceMilliseconds, const std::function<void()>& openImage, const std::function<void()>& analyzeImage) {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -81,17 +82,29 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     }
     ImGui::Spacing();
 
-    const float controlsHeight = 52.0f;
+    const float controlsHeight = 58.0f;
     ImVec2 previewArea = ImGui::GetContentRegionAvail();
     previewArea.y = std::max(80.0f, previewArea.y - controlsHeight);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.025f, 0.03f, 0.04f, 1.0f));
     ImGui::BeginChild("Image Preview", previewArea, ImGuiChildFlags_Borders);
     const ImVec2 available = ImGui::GetContentRegionAvail();
     if (image && texture && texture->IsValid()) {
-        const float scale = std::min(available.x / static_cast<float>(image->width), available.y / static_cast<float>(image->height));
-        const ImVec2 size(std::max(1.0f, image->width * scale), std::max(1.0f, image->height * scale));
-        ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + std::max(0.0f, (available.x - size.x) * 0.5f), ImGui::GetCursorPosY() + std::max(0.0f, (available.y - size.y) * 0.5f)));
-        ImGui::Image(static_cast<ImTextureID>(texture->gpuHandle.ptr), size);
+        const bool hasMask = mask && mask->IsValid() && maskTexture && maskTexture->IsValid();
+        const float panelWidth = hasMask ? std::max(1.0f, (available.x - 20.0f) * 0.5f) : available.x;
+        const auto drawPreview = [&](const char* title, const GraphicsDevice::Texture& previewTexture) {
+            ImGui::BeginGroup();
+            const float titleWidth = ImGui::CalcTextSize(title).x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (panelWidth - titleWidth) * 0.5f));
+            ImGui::TextUnformatted(title);
+            const float imageHeight = std::max(1.0f, available.y - ImGui::GetTextLineHeightWithSpacing());
+            const float scale = std::min(panelWidth / image->width, imageHeight / image->height);
+            const ImVec2 size(std::max(1.0f, image->width * scale), std::max(1.0f, image->height * scale));
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (panelWidth - size.x) * 0.5f));
+            ImGui::Image(static_cast<ImTextureID>(previewTexture.gpuHandle.ptr), size);
+            ImGui::EndGroup();
+        };
+        drawPreview("Original", *texture);
+        if (hasMask) { ImGui::SameLine(0.0f, 20.0f); drawPreview("AI Mask", *maskTexture); }
     } else {
         const char* label = "Image Preview";
         const ImVec2 textSize = ImGui::CalcTextSize(label);
@@ -101,11 +114,10 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     ImGui::EndChild();
     ImGui::PopStyleColor();
     ImGui::Spacing();
-    ImGui::BeginDisabled();
-    ImGui::Button("Analyze Image", ImVec2(145.0f, 0.0f));
+    ImGui::BeginDisabled(!image || !image->IsValid() || analyzing);
+    if (ImGui::Button(analyzing ? "Analyzing..." : "Analyze Image", ImVec2(145.0f, 0.0f))) analyzeImage();
     ImGui::EndDisabled();
-    ImGui::SameLine();
-    ImGui::TextDisabled("Available in Phase 2");
+    if (inferenceMilliseconds > 0.0) { ImGui::SameLine(); ImGui::TextDisabled("CPU inference: %.1f ms", inferenceMilliseconds); }
     ImGui::End();
 }
 

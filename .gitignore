@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Local read-only engine reference used during LayerForge development
 .yanengine-reference/
+
+# AI model weights are downloaded locally (see Models/README.md)
+Models/**/*.onnx
