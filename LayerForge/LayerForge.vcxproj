@@ -146,10 +146,17 @@
 
   <ItemGroup>
     <ClInclude Include="AI\MaskData.h" />
+    <ClInclude Include="AI\AIModelManager.h" />
+    <ClInclude Include="AI\DetectionBox.h" />
+    <ClInclude Include="AI\GroundingDinoModel.h" />
+    <ClInclude Include="AI\HairBoxFilter.h" />
+    <ClInclude Include="AI\InferenceDevice.h" />
     <ClInclude Include="AI\MaskProcessor.h" />
+    <ClInclude Include="AI\Sam2Model.h" />
     <ClInclude Include="AI\SegmentationModel.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="EditorUI.h" />
+    <ClInclude Include="Editor\MaskEditor.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="ImageData.h" />
     <ClInclude Include="ImageLoader.h" />
@@ -163,10 +170,16 @@
     <ClInclude Include="ThirdParty\imgui\backends\imgui_impl_win32.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AI\AIModelManager.cpp" />
     <ClCompile Include="AI\SegmentationModel.cpp" />
+    <ClCompile Include="AI\GroundingDinoModel.cpp" />
+    <ClCompile Include="AI\HairBoxFilter.cpp" />
+    <ClCompile Include="AI\InferenceDevice.cpp" />
     <ClCompile Include="AI\MaskProcessor.cpp" />
+    <ClCompile Include="AI\Sam2Model.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="EditorUI.cpp" />
+    <ClCompile Include="Editor\MaskEditor.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="ImageLoader.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -178,7 +191,7 @@
     <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.28.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

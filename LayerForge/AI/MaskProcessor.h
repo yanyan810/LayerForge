@@ -22,4 +22,6 @@ class MaskProcessor {
 public:
     bool Process(const MaskData& rawMask, const ImageData& original, const MaskAdjustmentSettings& settings,
         MaskData& adjustedMask, ImageData& foreground, ImageData& background, std::string& error) const;
+    bool Compose(const MaskData& mask, const ImageData& original,
+        ImageData& foreground, ImageData& background, std::string& error) const;
 };

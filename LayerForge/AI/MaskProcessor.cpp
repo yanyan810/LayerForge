@@ -34,16 +34,25 @@ bool MaskProcessor::Process(const MaskData& rawMask, const ImageData& original, 
     adjustedMask.width = rawMask.width;
     adjustedMask.height = rawMask.height;
     adjustedMask.grayscale.resize(pixelCount);
-    foreground.width = background.width = original.width;
-    foreground.height = background.height = original.height;
-    foreground.rgbaPixels.resize(pixelCount * 4);
-    background.rgbaPixels.resize(pixelCount * 4);
-
     for (size_t index = 0; index < pixelCount; ++index) {
         const uint8_t alpha = alphaLookup[rawMask.grayscale[index]];
         adjustedMask.grayscale[index] = alpha;
+    }
+    return Compose(adjustedMask, original, foreground, background, error);
+}
 
-        const size_t rgba = index * 4;
+bool MaskProcessor::Compose(const MaskData& mask, const ImageData& original,
+    ImageData& foreground, ImageData& background, std::string& error) const {
+    error.clear();
+    if (!mask.IsValid() || !original.IsValid() || mask.width != original.width || mask.height != original.height) {
+        error = "Mask dimensions do not match the original image."; return false;
+    }
+    const size_t pixelCount = mask.grayscale.size();
+    foreground.width = background.width = original.width;
+    foreground.height = background.height = original.height;
+    foreground.rgbaPixels.resize(pixelCount * 4); background.rgbaPixels.resize(pixelCount * 4);
+    for (size_t index = 0; index < pixelCount; ++index) {
+        const size_t rgba = index * 4; const uint8_t alpha = mask.grayscale[index];
         foreground.rgbaPixels[rgba] = background.rgbaPixels[rgba] = original.rgbaPixels[rgba];
         foreground.rgbaPixels[rgba + 1] = background.rgbaPixels[rgba + 1] = original.rgbaPixels[rgba + 1];
         foreground.rgbaPixels[rgba + 2] = background.rgbaPixels[rgba + 2] = original.rgbaPixels[rgba + 2];

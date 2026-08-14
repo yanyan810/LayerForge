@@ -29,6 +29,8 @@ public:
     void Shutdown();
     void Resize(uint32_t width, uint32_t height);
     bool CreateTexture(const ImageData& image, Texture& texture, std::string& error);
+    bool PrepareTexture(const ImageData& image, Texture& texture, std::string& error);
+    bool CommitTexture(Texture&& prepared, Texture& destination, std::string& error);
     void BeginFrame();
     void EndFrame();
     void WaitForGpu();

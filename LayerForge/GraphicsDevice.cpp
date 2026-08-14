@@ -113,7 +113,7 @@ uint32_t GraphicsDevice::AllocateSrv() { return nextSrv_ < 256 ? nextSrv_++ : UI
 D3D12_CPU_DESCRIPTOR_HANDLE GraphicsDevice::CpuSrv(uint32_t index) const { auto h = srvHeap_->GetCPUDescriptorHandleForHeapStart(); h.ptr += static_cast<SIZE_T>(index) * srvIncrement_; return h; }
 D3D12_GPU_DESCRIPTOR_HANDLE GraphicsDevice::GpuSrv(uint32_t index) const { auto h = srvHeap_->GetGPUDescriptorHandleForHeapStart(); h.ptr += static_cast<UINT64>(index) * srvIncrement_; return h; }
 
-bool GraphicsDevice::CreateTexture(const ImageData& image, Texture& texture, std::string& error) {
+bool GraphicsDevice::PrepareTexture(const ImageData& image, Texture& texture, std::string& error) {
     if (!image.IsValid()) { error = "Decoded image data is invalid."; return false; }
     WaitForGpu();
 
@@ -171,23 +171,36 @@ bool GraphicsDevice::CreateTexture(const ImageData& image, Texture& texture, std
     commandQueue_->ExecuteCommandLists(1, lists);
     WaitForGpu();
 
-    uint32_t index = texture.descriptorIndex;
+    texture.resource = std::move(resource);
+    texture.width = image.width;
+    texture.height = image.height;
+    return true;
+}
+
+bool GraphicsDevice::CommitTexture(Texture&& prepared, Texture& destination, std::string& error) {
+    if (!prepared.IsValid()) { error = "Cannot commit an invalid texture."; return false; }
+    uint32_t index = destination.descriptorIndex;
     if (index == UINT32_MAX) index = AllocateSrv();
     if (index == UINT32_MAX) { error = "The SRV descriptor heap is full."; return false; }
+    const auto desc = prepared.resource->GetDesc();
     D3D12_SHADER_RESOURCE_VIEW_DESC srv{};
     srv.Format = desc.Format;
     srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srv.Texture2D.MipLevels = 1;
     auto cpu = CpuSrv(index);
-    device_->CreateShaderResourceView(resource.Get(), &srv, cpu);
-    texture.resource = std::move(resource);
-    texture.cpuHandle = cpu;
-    texture.gpuHandle = GpuSrv(index);
-    texture.descriptorIndex = index;
-    texture.width = image.width;
-    texture.height = image.height;
+    device_->CreateShaderResourceView(prepared.resource.Get(), &srv, cpu);
+    prepared.cpuHandle = cpu;
+    prepared.gpuHandle = GpuSrv(index);
+    prepared.descriptorIndex = index;
+    destination = std::move(prepared);
     return true;
+}
+
+bool GraphicsDevice::CreateTexture(const ImageData& image, Texture& texture, std::string& error) {
+    Texture prepared;
+    if (!PrepareTexture(image, prepared, error)) return false;
+    return CommitTexture(std::move(prepared), texture, error);
 }
 
 void GraphicsDevice::BeginFrame() {
@@ -241,5 +254,5 @@ void GraphicsDevice::Resize(uint32_t width, uint32_t height) {
 void GraphicsDevice::Shutdown() {
     WaitForGpu(); ReleaseRenderTargets();
     if (fenceEvent_) { CloseHandle(fenceEvent_); fenceEvent_ = nullptr; }
-    commandList_.Reset(); for (auto& a : allocators_) a.Reset(); fence_.Reset(); srvHeap_.Reset(); rtvHeap_.Reset(); swapChain_.Reset(); commandQueue_.Reset(); device_.Reset(); factory_.Reset();
+    commandList_.Reset(); for (auto& a : allocators_) a.Reset(); fence_.Reset(); srvHeap_.Reset(); rtvHeap_.Reset(); swapChain_.Reset(); commandQueue_.Reset(); device_.Reset(); factory_.Reset(); nextSrv_ = 0;
 }
