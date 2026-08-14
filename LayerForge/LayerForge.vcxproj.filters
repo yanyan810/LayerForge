@@ -15,6 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AI\AIModelManager.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="AI\MaskData.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -24,13 +25,25 @@
     <ClInclude Include="AI\MaskProcessor.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="AI\DetectionBox.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="AI\GroundingDinoModel.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="AI\HairBoxFilter.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="AI\Sam2Model.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="AI\InferenceDevice.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="Editor\MaskEditor.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AI\AIModelManager.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="AI\SegmentationModel.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="AI\MaskProcessor.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="AI\GroundingDinoModel.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="AI\HairBoxFilter.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="AI\Sam2Model.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="AI\InferenceDevice.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="Editor\MaskEditor.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
 </Project>

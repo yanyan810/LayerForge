@@ -52,17 +52,14 @@ uint8_t SampleMaskBilinear(const std::vector<float>& mask, uint32_t width, uint3
 SegmentationModel::SegmentationModel() = default;
 SegmentationModel::~SegmentationModel() = default;
 bool SegmentationModel::IsLoaded() const noexcept { return session_ != nullptr; }
-void SegmentationModel::Reset() { session_.reset(); environment_.reset(); inputName_.clear(); outputName_.clear(); }
+void SegmentationModel::Reset() { session_.reset(); environment_.reset(); inputName_.clear(); outputName_.clear(); provider_ = InferenceProvider::Cpu; providerWarning_.clear(); }
 
-bool SegmentationModel::Load(const std::filesystem::path& modelPath, std::string& error) {
+bool SegmentationModel::Load(const std::filesystem::path& modelPath, InferenceDevice device, std::string& error) {
     Reset(); error.clear();
     if (!std::filesystem::exists(modelPath)) { error = "AI model not found: " + modelPath.string() + ". See Models/README.md."; return false; }
     try {
         environment_ = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "LayerForge");
-        Ort::SessionOptions options;
-        options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-        options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-        session_ = std::make_unique<Ort::Session>(*environment_, modelPath.c_str(), options);
+        if (!CreateOnnxSession(*environment_, modelPath, device, false, session_, provider_, providerWarning_, error)) throw std::runtime_error(error);
         if (session_->GetInputCount() != 1 || session_->GetOutputCount() < 1) throw std::runtime_error("U2NETP must have one input and at least one output.");
         Ort::AllocatorWithDefaultOptions allocator;
         auto inputName = session_->GetInputNameAllocated(0, allocator);

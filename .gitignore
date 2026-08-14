@@ -367,3 +367,12 @@ FodyWeavers.xsd
 
 # AI model weights are downloaded locally (see Models/README.md)
 Models/**/*.onnx
+Models/**/*.pt
+Models/**/*.pth
+Models/**/*.bin
+Models/**/*.safetensors
+
+# Local Phase 4 model-export workspaces
+.phase4c-eval/
+.phase4e-*/
+.phase4h-*/
