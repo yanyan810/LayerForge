@@ -78,6 +78,14 @@ struct HairAnalysisResult {
     std::string error;
 };
 
+struct SmartHairAnalysisResult {
+    MaskData rawMask;
+    float predictedIou = 0.0f;
+    double promptMilliseconds = 0.0;
+    double decoderMilliseconds = 0.0;
+    std::string error;
+};
+
 class AIModelManager {
 public:
     using ProgressCallback = std::function<void(AnalysisProgress)>;
@@ -87,6 +95,9 @@ public:
     HairAnalysisResult AnalyzeHair(const ImageData& image, const MaskData& characterMask,
         const MaskAdjustmentSettings& settings, const AIModelPaths& paths, InferenceDevice device,
         uint64_t imageGeneration, std::stop_token stopToken, const ProgressCallback& progress);
+    SmartHairAnalysisResult AnalyzeSmartHair(const ImageData& image, const DetectionBox& hairBox,
+        const std::vector<Sam2PromptPoint>& prompts, uint64_t imageGeneration,
+        std::stop_token stopToken, const ProgressCallback& progress);
 
     void Reset();
     void InvalidateImageCache();

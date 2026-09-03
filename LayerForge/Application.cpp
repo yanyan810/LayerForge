@@ -4,6 +4,7 @@
 
 #include <commdlg.h>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <optional>
 
@@ -44,6 +45,33 @@ ImageData MaskPreviewImage(const MaskData& mask) {
         const uint8_t value = mask.grayscale[index];
         image.rgbaPixels[index * 4] = value; image.rgbaPixels[index * 4 + 1] = value;
         image.rgbaPixels[index * 4 + 2] = value; image.rgbaPixels[index * 4 + 3] = 255;
+    }
+    return image;
+}
+
+ImageData SmartDifferenceImage(const ImageData& original, const MaskData& before, const MaskData& candidate) {
+    ImageData image;
+    if (!original.IsValid() || !before.IsValid() || !candidate.IsValid() ||
+        original.width != before.width || original.height != before.height ||
+        before.width != candidate.width || before.height != candidate.height) return image;
+    image = original;
+    for (size_t rgba = 0; rgba < image.rgbaPixels.size(); rgba += 4) {
+        image.rgbaPixels[rgba] = static_cast<uint8_t>(image.rgbaPixels[rgba] * 0.45f);
+        image.rgbaPixels[rgba + 1] = static_cast<uint8_t>(image.rgbaPixels[rgba + 1] * 0.45f);
+        image.rgbaPixels[rgba + 2] = static_cast<uint8_t>(image.rgbaPixels[rgba + 2] * 0.45f);
+    }
+    for (size_t index = 0; index < before.grayscale.size(); ++index) {
+        const int difference = static_cast<int>(candidate.grayscale[index]) - before.grayscale[index];
+        if (difference == 0) continue;
+        const float alpha = std::clamp(0.65f + std::abs(difference) / 255.0f * 0.30f, 0.65f, 0.95f);
+        const size_t rgba = index * 4;
+        const float red = difference > 0 ? 35.0f : 255.0f;
+        const float green = difference > 0 ? 255.0f : 45.0f;
+        const float blue = difference > 0 ? 75.0f : 45.0f;
+        image.rgbaPixels[rgba] = static_cast<uint8_t>(image.rgbaPixels[rgba] * (1.0f - alpha) + red * alpha);
+        image.rgbaPixels[rgba + 1] = static_cast<uint8_t>(image.rgbaPixels[rgba + 1] * (1.0f - alpha) + green * alpha);
+        image.rgbaPixels[rgba + 2] = static_cast<uint8_t>(image.rgbaPixels[rgba + 2] * (1.0f - alpha) + blue * alpha);
+        image.rgbaPixels[rgba + 3] = 255;
     }
     return image;
 }
@@ -107,13 +135,23 @@ int Application::Run(HINSTANCE instance, int showCommand) {
             hairFinalMask_.IsValid() ? &hairFinalMask_ : nullptr, hairFinalMaskTexture_.IsValid() ? &hairFinalMaskTexture_ : nullptr,
             hairEditPreview_.IsValid() ? &hairEditPreview_ : nullptr, hairEditPreviewTexture_.IsValid() ? &hairEditPreviewTexture_ : nullptr,
             hairImage_.IsValid() ? &hairImage_ : nullptr, hairTexture_.IsValid() ? &hairTexture_ : nullptr,
-            maskSettings_, hairMaskSettings_, hairMaskEditor_, inferenceDevice_, error_, providerWarning_, analyzing_, hairAnalysisStage_, inferenceMilliseconds_, maskUpdateMilliseconds_,
+            maskSettings_, hairMaskSettings_, hairMaskEditor_, smartMaskCorrection_,
+            smartPromptPoints_.empty() ? nullptr : &smartPromptPoints_,
+            smartCandidateMask_.IsValid() ? &smartCandidateMask_ : nullptr, smartCandidateTexture_.IsValid() ? &smartCandidateTexture_ : nullptr,
+            smartDifferenceImage_.IsValid() ? &smartDifferenceImage_ : nullptr, smartDifferenceTexture_.IsValid() ? &smartDifferenceTexture_ : nullptr,
+            smartCandidateMask_.IsValid(), smartPromptMilliseconds_, smartDecoderMilliseconds_, smartMaskMilliseconds_,
+            smartTextureMilliseconds_, smartTotalMilliseconds_, smartPredictedIou_,
+            inferenceDevice_, error_, providerWarning_, analyzing_, hairAnalysisStage_, inferenceMilliseconds_, maskUpdateMilliseconds_,
             groundingDinoMilliseconds_, sam2Timings_, hairTotalMilliseconds_, hairMaskUpdateMilliseconds_, samPredictedIou_,
             modelStatus.character, modelStatus.groundingDino, modelStatus.samEncoder, modelStatus.samDecoder,
             modelStatus.characterProvider, modelStatus.groundingDinoProvider, modelStatus.samEncoderProvider, modelStatus.samDecoderProvider,
             [this] { OpenImage(); }, [this] { StartCharacterAnalysis(); }, [this] { StartHairAnalysis(); },
-            [this] { maskUpdateRequested_ = true; }, [this] { hairMaskUpdateRequested_ = true; },
-            [this] { hairManualUpdateRequested_ = true; }, [this] { ChangeInferenceDevice(); });
+            [this] { maskUpdateRequested_ = true; }, [this] { CancelSmartCandidate(); hairMaskUpdateRequested_ = true; },
+            [this] { hairManualUpdateRequested_ = true; },
+            [this](const SmartStrokeRequest& request) { StartSmartHairCorrection(request); },
+            [this] { ApplySmartCandidate(); }, [this] { CancelSmartCandidate(); },
+            [this] { ResetManualHairEdit(); }, [this] { ChangeInferenceDevice(); });
+        styleAIView_.Draw(window_, graphics_, imageLoader_);
         graphics_.BeginFrame();
         editorUI_.Render(graphics_.CommandList());
         graphics_.EndFrame();
@@ -182,6 +220,8 @@ void Application::ResetAnalysis() {
 void Application::ResetHairResult() {
     hairRawMask_ = {}; hairAdjustedMask_ = {}; hairFinalMask_ = {}; hairImage_ = {}; hairEditPreview_ = {}; hairBox_ = {};
     hairMaskEditor_.Clear();
+    smartMaskCorrection_.CancelStroke();
+    CancelSmartCandidate();
     ClearTexturePreservingDescriptor(hairRawMaskTexture_); ClearTexturePreservingDescriptor(hairAdjustedMaskTexture_);
     ClearTexturePreservingDescriptor(hairFinalMaskTexture_); ClearTexturePreservingDescriptor(hairEditPreviewTexture_);
     ClearTexturePreservingDescriptor(hairTexture_);
@@ -203,6 +243,7 @@ AIModelPaths Application::ModelPaths() const {
 
 void Application::StartCharacterAnalysis() {
     if (!image_.IsValid() || analyzing_) return;
+    ResetHairResult();
     analyzing_ = true; activeJobType_ = AnalysisJobType::Character; activeJobId_ = ++nextJobId_;
     const uint64_t jobId = activeJobId_, generation = imageGeneration_;
     const ImageData image = image_; const MaskAdjustmentSettings settings = maskSettings_; const AIModelPaths paths = ModelPaths();
@@ -238,6 +279,7 @@ void Application::RebuildDerivedLayers() {
 
 void Application::StartHairAnalysis() {
     if (!image_.IsValid() || !adjustedMask_.IsValid() || analyzing_) return;
+    ResetHairResult();
     analyzing_ = true; activeJobType_ = AnalysisJobType::Hair; activeJobId_ = ++nextJobId_;
     const uint64_t jobId = activeJobId_, generation = imageGeneration_;
     const ImageData image = image_; const MaskData characterMask = adjustedMask_;
@@ -255,6 +297,55 @@ void Application::StartHairAnalysis() {
         } catch (...) {
             completed.hair.error = "Hair analysis worker failed with an unknown exception.";
         }
+        std::scoped_lock lock(resultMutex_); pendingResult_ = std::move(completed);
+    });
+}
+
+void Application::StartSmartHairCorrection(const SmartStrokeRequest& request) {
+    if (!image_.IsValid() || !hairFinalMask_.IsValid() || !hairBox_.IsValid() || analyzing_ ||
+        smartCandidateMask_.IsValid() || request.prompts.empty() || !request.roi.IsValid()) return;
+    analyzing_ = true; activeJobType_ = AnalysisJobType::SmartHair; activeJobId_ = ++nextJobId_;
+    const uint64_t jobId = activeJobId_, generation = imageGeneration_;
+    const ImageData image = image_; const DetectionBox hairBox = hairBox_;
+    const MaskData currentFinal = hairFinalMask_; const MaskAdjustmentSettings settings = hairMaskSettings_;
+    smartPromptPoints_.clear(); smartPromptPoints_.reserve(request.prompts.size());
+    const int32_t label = request.mode == SmartCorrectionMode::Add ? 1 : 0;
+    for (const SmartPoint& point : request.prompts) smartPromptPoints_.push_back({ point.x, point.y, label });
+    smartCorrectionRoi_ = request.roi; smartCorrectionMode_ = request.mode;
+    error_.clear(); hairAnalysisStage_ = HairAnalysisStage::Refining;
+    workerProgress_.store(AnalysisProgress::RefiningMask, std::memory_order_release);
+    analysisWorker_ = std::jthread([this, image, hairBox, currentFinal, settings, request, jobId, generation](std::stop_token stopToken) mutable {
+        const auto totalStart = std::chrono::steady_clock::now();
+        WorkerResult completed; completed.type = AnalysisJobType::SmartHair; completed.jobId = jobId;
+        completed.imageGeneration = generation; completed.smartRequest = request;
+        try {
+            std::vector<Sam2PromptPoint> prompts; prompts.reserve(request.prompts.size());
+            const int32_t label = request.mode == SmartCorrectionMode::Add ? 1 : 0;
+            for (const SmartPoint& point : request.prompts) prompts.push_back({ point.x, point.y, label });
+            completed.smartHair = modelManager_.AnalyzeSmartHair(image, hairBox, prompts, generation, stopToken,
+                [this](AnalysisProgress progress) { workerProgress_.store(progress, std::memory_order_release); });
+            completed.smartHair.promptMilliseconds += request.promptMilliseconds;
+            if (completed.smartHair.error.empty() && !stopToken.stop_requested()) {
+                const auto maskStart = std::chrono::steady_clock::now();
+                MaskData adjusted; std::string processError;
+                MaskProcessor processor;
+                if (!processor.Adjust(completed.smartHair.rawMask, settings, adjusted, processError) ||
+                    !SmartMaskCorrection::BuildCandidate(currentFinal, adjusted, request.roi, request.mode,
+                        completed.smartCandidate)) {
+                    completed.smartHair.error = processError.empty() ? "Could not build the Smart Correction candidate." : processError;
+                }
+                completed.smartMaskMilliseconds = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - maskStart).count();
+            } else if (stopToken.stop_requested() && completed.smartHair.error.empty()) {
+                completed.smartHair.error = "Analysis cancelled.";
+            }
+        } catch (const std::exception& exception) {
+            completed.smartHair.error = std::string("Smart Correction worker failed: ") + exception.what();
+        } catch (...) {
+            completed.smartHair.error = "Smart Correction worker failed with an unknown exception.";
+        }
+        completed.smartTotalMilliseconds = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - totalStart).count();
         std::scoped_lock lock(resultMutex_); pendingResult_ = std::move(completed);
     });
 }
@@ -277,10 +368,11 @@ void Application::PollAnalysisResult() {
     }
     if (completed->type == AnalysisJobType::Character) ApplyCharacterResult(std::move(completed->character));
     else if (completed->type == AnalysisJobType::Hair) ApplyHairResult(std::move(completed->hair));
+    else if (completed->type == AnalysisJobType::SmartHair) ApplySmartHairResult(std::move(*completed));
 }
 
 void Application::UpdateProgressState() {
-    if (!analyzing_ || activeJobType_ != AnalysisJobType::Hair) return;
+    if (!analyzing_ || (activeJobType_ != AnalysisJobType::Hair && activeJobType_ != AnalysisJobType::SmartHair)) return;
     switch (workerProgress_.load(std::memory_order_acquire)) {
     case AnalysisProgress::LoadingModels: hairAnalysisStage_ = HairAnalysisStage::LoadingModels; break;
     case AnalysisProgress::DetectingHair: hairAnalysisStage_ = HairAnalysisStage::Detecting; break;
@@ -360,6 +452,56 @@ void Application::ApplyHairResult(HairAnalysisResult&& result) {
     hairAnalysisStage_ = HairAnalysisStage::Complete; error_.clear();
 }
 
+void Application::ApplySmartHairResult(WorkerResult&& result) {
+    hairAnalysisStage_ = HairAnalysisStage::Complete;
+    if (!result.smartHair.error.empty()) {
+        if (result.smartHair.error != "Analysis cancelled.") error_ = std::move(result.smartHair.error);
+        smartPromptPoints_.clear(); return;
+    }
+    const auto textureStart = std::chrono::steady_clock::now();
+    const ImageData candidatePreview = MaskPreviewImage(result.smartCandidate);
+    ImageData difference = SmartDifferenceImage(image_, hairFinalMask_, result.smartCandidate);
+    GraphicsDevice::Texture candidateTexture, differenceTexture;
+    std::string textureError;
+    if (!graphics_.PrepareTexture(candidatePreview, candidateTexture, textureError) ||
+        !graphics_.PrepareTexture(difference, differenceTexture, textureError) ||
+        !graphics_.CommitTexture(std::move(candidateTexture), smartCandidateTexture_, textureError) ||
+        !graphics_.CommitTexture(std::move(differenceTexture), smartDifferenceTexture_, textureError)) {
+        error_ = std::move(textureError); smartPromptPoints_.clear(); return;
+    }
+    smartCandidateMask_ = std::move(result.smartCandidate); smartDifferenceImage_ = std::move(difference);
+    smartCorrectionRoi_ = result.smartRequest.roi; smartCorrectionMode_ = result.smartRequest.mode;
+    smartPromptMilliseconds_ = result.smartHair.promptMilliseconds;
+    smartDecoderMilliseconds_ = result.smartHair.decoderMilliseconds;
+    smartMaskMilliseconds_ = result.smartMaskMilliseconds;
+    smartTextureMilliseconds_ = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - textureStart).count();
+    smartTotalMilliseconds_ = result.smartTotalMilliseconds + smartTextureMilliseconds_;
+    smartPredictedIou_ = result.smartHair.predictedIou; error_.clear();
+}
+
+void Application::ApplySmartCandidate() {
+    if (analyzing_ || !smartCandidateMask_.IsValid()) return;
+    if (!hairMaskEditor_.CommitFinal(hairAdjustedMask_, smartCandidateMask_)) {
+        CancelSmartCandidate(); return;
+    }
+    CancelSmartCandidate();
+    RebuildManualHairLayers();
+}
+
+void Application::CancelSmartCandidate() {
+    smartMaskCorrection_.CancelStroke(); smartCandidateMask_ = {}; smartDifferenceImage_ = {};
+    smartPromptPoints_.clear(); smartCorrectionRoi_ = {}; smartPromptMilliseconds_ = 0.0;
+    smartDecoderMilliseconds_ = smartMaskMilliseconds_ = smartTextureMilliseconds_ = smartTotalMilliseconds_ = 0.0;
+    smartPredictedIou_ = 0.0f;
+    ClearTexturePreservingDescriptor(smartCandidateTexture_); ClearTexturePreservingDescriptor(smartDifferenceTexture_);
+}
+
+void Application::ResetManualHairEdit() {
+    if (analyzing_) return;
+    CancelSmartCandidate(); hairMaskEditor_.ResetManualEdit(); RebuildManualHairLayers();
+}
+
 void Application::CancelActiveAnalysis() {
     if (analysisWorker_.joinable()) analysisWorker_.request_stop();
 }
@@ -424,7 +566,7 @@ void Application::Shutdown() {
     { std::scoped_lock lock(resultMutex_); pendingResult_.reset(); }
     analyzing_ = false; activeJobType_ = AnalysisJobType::None;
     modelManager_.Reset();
-    if (initialized_) { graphics_.WaitForGpu(); editorUI_.Shutdown(); ResetAnalysis(); texture_ = {}; graphics_.Shutdown(); initialized_ = false; }
+    if (initialized_) { graphics_.WaitForGpu(); styleAIView_.Shutdown(); editorUI_.Shutdown(); ResetAnalysis(); texture_ = {}; graphics_.Shutdown(); initialized_ = false; }
     if (window_) { DestroyWindow(window_); window_ = nullptr; }
 }
 

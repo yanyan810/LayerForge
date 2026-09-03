@@ -1,4 +1,5 @@
 #include "Editor/MaskEditor.h"
+#include "Editor/SmartMaskCorrection.h"
 
 #include <algorithm>
 #include <chrono>
@@ -68,6 +69,53 @@ int main() {
         Require(finalMask.grayscale == changedAuto.grayscale, "Reset Manual Edit did not restore Auto mask exactly.");
         Require(!editor.CanUndo() && !editor.CanRedo() && !editor.HasManualEdit(), "Reset did not clear editor state.");
 
+        SmartMaskCorrection smart;
+        SmartStrokeRequest shortRequest;
+        Require(smart.BeginStroke(8.0f, 8.0f, 20.0f, SmartCorrectionMode::Add, 100, 80), "Smart Add did not begin.");
+        Require(smart.EndStroke(shortRequest), "Smart Add did not create a request.");
+        Require(shortRequest.prompts.size() == 1, "A short Smart stroke must create one prompt.");
+        Require(shortRequest.roi.IsValid() && shortRequest.roi.x1 == 0 && shortRequest.roi.y1 == 0,
+            "Smart ROI was not clipped to the image.");
+
+        SmartStrokeRequest longRequest;
+        Require(smart.BeginStroke(10.0f, 40.0f, 12.0f, SmartCorrectionMode::Erase, 160, 80), "Smart Erase did not begin.");
+        Require(smart.ContinueStroke(80.0f, 40.0f) && smart.ContinueStroke(150.0f, 40.0f), "Smart stroke sampling input failed.");
+        Require(smart.EndStroke(longRequest), "Long Smart stroke did not create a request.");
+        Require(longRequest.prompts.size() == 3, "A long Smart stroke must create three sparse prompts.");
+        Require(longRequest.mode == SmartCorrectionMode::Erase && longRequest.roi.x2 == 160,
+            "Smart request did not preserve mode or clipped ROI.");
+
+        MaskData current; current.width = 8; current.height = 6; current.grayscale.assign(48, 100);
+        MaskData samMask = current; std::fill(samMask.grayscale.begin(), samMask.grayscale.end(), 220);
+        const SmartCorrectionRoi roi{ 2, 1, 6, 5 };
+        MaskData candidate;
+        Require(SmartMaskCorrection::BuildCandidate(current, samMask, roi, SmartCorrectionMode::Add, candidate),
+            "Smart Add candidate failed.");
+        Require(Pixel(candidate, 3, 2) == 220 && Pixel(candidate, 0, 0) == 100,
+            "Smart Add changed the wrong region or failed to preserve ROI exterior.");
+        for (size_t index = 0; index < candidate.grayscale.size(); ++index)
+            Require(candidate.grayscale[index] >= current.grayscale[index], "Smart Add violated the increase-only rule.");
+        std::fill(samMask.grayscale.begin(), samMask.grayscale.end(), 30);
+        Require(SmartMaskCorrection::BuildCandidate(current, samMask, roi, SmartCorrectionMode::Erase, candidate),
+            "Smart Erase candidate failed.");
+        Require(Pixel(candidate, 3, 2) == 30 && Pixel(candidate, 0, 0) == 100,
+            "Smart Erase changed the wrong region or failed to preserve ROI exterior.");
+        for (size_t index = 0; index < candidate.grayscale.size(); ++index)
+            Require(candidate.grayscale[index] <= current.grayscale[index], "Smart Erase violated the decrease-only rule.");
+
+        MaskEditor smartHistory; smartHistory.Initialize(current.width, current.height);
+        MaskData smartFinal = current; smartFinal.grayscale[10] = 230; smartFinal.grayscale[20] = 15;
+        Require(smartHistory.CommitFinal(current, smartFinal), "Smart Apply could not be committed.");
+        Require(smartHistory.Apply(current, candidate), "Committed Smart mask could not be applied.");
+        Require(Pixel(candidate, 2, 1) == 231 && Pixel(candidate, 4, 2) == 14,
+            "Smart Apply was not represented by the manual layer.");
+        Require(smartHistory.Undo() && smartHistory.Apply(current, candidate) && candidate.grayscale == current.grayscale,
+            "Smart Apply was not stored as one Undo operation.");
+        Require(smartHistory.Redo() && smartHistory.Apply(current, candidate), "Smart Apply Redo failed.");
+        MaskData thresholdAuto = current; std::fill(thresholdAuto.grayscale.begin(), thresholdAuto.grayscale.end(), 50);
+        Require(smartHistory.Apply(thresholdAuto, candidate) && Pixel(candidate, 2, 1) == 231 && Pixel(candidate, 4, 2) == 14,
+            "Smart correction did not survive threshold-style Auto mask changes.");
+
         MaskData highAuto; highAuto.width = 2000; highAuto.height = 1200;
         highAuto.grayscale.assign(static_cast<size_t>(highAuto.width) * highAuto.height, 128);
         MaskEditor highEditor; highEditor.Initialize(highAuto.width, highAuto.height);
@@ -80,7 +128,7 @@ int main() {
         const auto applyStart = std::chrono::steady_clock::now();
         Require(highEditor.Apply(highAuto, finalMask), "High-resolution apply failed.");
         const double applyMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - applyStart).count();
-        std::cout << "MaskEditor tests passed. highres_stroke_ms=" << strokeMs << " apply_ms=" << applyMs << '\n'; return 0;
+        std::cout << "MaskEditor + SmartCorrection tests passed. highres_stroke_ms=" << strokeMs << " apply_ms=" << applyMs << '\n'; return 0;
     } catch (const std::exception& exception) {
         std::cerr << exception.what() << '\n'; return 1;
     }

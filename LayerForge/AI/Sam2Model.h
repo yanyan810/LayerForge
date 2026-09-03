@@ -50,6 +50,9 @@ public:
     bool Run(const ImageData& image, const DetectionBox& box, MaskData& mask, float& predictedIou,
         Sam2Timings& timings, Sam2RefinementInfo& refinement,
         std::string& error, const std::function<void()>& encoderComplete = {});
+    bool RefineWithPrompts(const ImageData& image, const DetectionBox& box,
+        const std::vector<Sam2PromptPoint>& prompts, MaskData& mask, float& predictedIou,
+        double& decoderMilliseconds, std::string& error);
     void ClearImageCache();
     void Reset();
     [[nodiscard]] bool IsLoaded() const noexcept;
@@ -61,6 +64,7 @@ private:
     bool Encode(const ImageData& image, double& milliseconds, std::string& error);
     bool Decode(const std::vector<float>& points, const std::vector<int32_t>& labels,
         std::vector<float>& logits, float& predictedIou, double& milliseconds, std::string& error);
+    bool LogitsToMask(const std::vector<float>& logits, const ImageData& image, MaskData& mask, std::string& error) const;
     std::unique_ptr<Ort::Env> environment_;
     std::unique_ptr<Ort::Session> encoder_;
     std::unique_ptr<Ort::Session> decoder_;

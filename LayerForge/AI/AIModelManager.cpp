@@ -173,3 +173,29 @@ HairAnalysisResult AIModelManager::AnalyzeHair(const ImageData& image, const Mas
     }
     return result;
 }
+
+SmartHairAnalysisResult AIModelManager::AnalyzeSmartHair(const ImageData& image, const DetectionBox& hairBox,
+    const std::vector<Sam2PromptPoint>& prompts, uint64_t imageGeneration,
+    std::stop_token stopToken, const ProgressCallback& progress) {
+    std::scoped_lock modelLock(modelMutex_);
+    SmartHairAnalysisResult result;
+    try {
+        if (Cancelled(stopToken, result.error)) return result;
+        if (!sam2_.IsLoaded() || samCacheGeneration_ != imageGeneration) {
+            result.error = "Smart Correction requires the cached SAM features from the current Hair analysis."; return result;
+        }
+        progress(AnalysisProgress::RefiningMask);
+        const auto promptStart = std::chrono::steady_clock::now();
+        std::vector<Sam2PromptPoint> promptCopy = prompts;
+        result.promptMilliseconds = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - promptStart).count();
+        if (!sam2_.RefineWithPrompts(image, hairBox, promptCopy, result.rawMask, result.predictedIou,
+            result.decoderMilliseconds, result.error)) return result;
+        if (Cancelled(stopToken, result.error)) return result;
+        progress(AnalysisProgress::PreparingResult);
+    } catch (const std::exception& exception) {
+        result.error = std::string("Smart Correction worker failed: ") + exception.what();
+    } catch (...) {
+        result.error = "Smart Correction worker failed with an unknown exception.";
+    }
+    return result;
+}
