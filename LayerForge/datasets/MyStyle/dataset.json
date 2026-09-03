@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "name": "MyStyle",
+  "items": [
+    {
+      "image": "images/000001.jpg",
+      "caption": "captions/000001.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000002.jpg",
+      "caption": "captions/000002.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000003.jpg",
+      "caption": "captions/000003.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000004.jpg",
+      "caption": "captions/000004.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000005.jpg",
+      "caption": "captions/000005.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000006.jpg",
+      "caption": "captions/000006.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000007.jpg",
+      "caption": "captions/000007.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000008.jpg",
+      "caption": "captions/000008.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000009.jpg",
+      "caption": "captions/000009.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000010.jpg",
+      "caption": "captions/000010.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000011.jpg",
+      "caption": "captions/000011.txt",
+      "enabled": true
+    },
+    {
+      "image": "images/000012.jpg",
+      "caption": "captions/000012.txt",
+      "enabled": true
+    }
+  ]
+}

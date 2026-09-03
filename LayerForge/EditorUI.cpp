@@ -242,7 +242,8 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
-    constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+    constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::Begin("LayerForge", nullptr, flags);
     if (hairMaskEditor.IsStrokeActive() && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         if (hairMaskEditor.EndStroke()) hairManualChanged();
