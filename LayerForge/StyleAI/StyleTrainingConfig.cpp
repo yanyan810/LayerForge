@@ -33,12 +33,21 @@ bool SaveTrainingConfig(const StyleTrainingConfig& config, const std::filesystem
     std::ofstream stream(path, std::ios::binary | std::ios::trunc);
     if (!stream) { error = "Could not write training_config.json."; return false; }
     stream << "{\n"
-        << "  \"version\": 1,\n"
+        << "  \"version\": 2,\n"
         << "  \"dataset\": \"" << EscapeJson(Utf8(config.datasetPath)) << "\",\n"
         << "  \"output_name\": \"" << EscapeJson(config.outputName) << "\",\n"
+        << "  \"output_dir\": \"" << EscapeJson(Utf8(config.outputDirectory)) << "\",\n"
+        << "  \"base_model\": \"" << EscapeJson(config.baseModel) << "\",\n"
+        << "  \"trigger_word\": \"" << EscapeJson(config.triggerWord) << "\",\n"
         << "  \"epochs\": " << config.epochs << ",\n"
         << "  \"resolution\": " << config.resolution << ",\n"
-        << "  \"learning_rate\": " << std::fixed << std::setprecision(6) << config.learningRate << "\n"
+        << "  \"train_batch_size\": " << config.trainBatchSize << ",\n"
+        << "  \"gradient_accumulation_steps\": " << config.gradientAccumulationSteps << ",\n"
+        << "  \"learning_rate\": " << std::fixed << std::setprecision(6) << config.learningRate << ",\n"
+        << "  \"rank\": " << config.rank << ",\n"
+        << "  \"mixed_precision\": \"" << EscapeJson(config.mixedPrecision) << "\",\n"
+        << "  \"gradient_checkpointing\": " << (config.gradientCheckpointing ? "true" : "false") << ",\n"
+        << "  \"seed\": " << config.seed << "\n"
         << "}\n";
     if (!stream) { error = "Could not finish writing training_config.json."; return false; }
     return true;

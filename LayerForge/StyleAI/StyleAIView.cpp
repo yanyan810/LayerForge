@@ -135,32 +135,56 @@ void StyleAIView::StartBackend() {
     if (dataset_.GetItems().empty()) { trainingMessage_ = "Cannot start: Dataset contains no images."; return; }
     if (pythonPath_[0] == '\0') { trainingMessage_ = "Cannot start: Python path is empty."; return; }
     if (outputName_[0] == '\0') { trainingMessage_ = "Cannot start: Output name is empty."; return; }
+    if (baseModel_[0] == '\0') { trainingMessage_ = "Cannot start: Base model is empty."; return; }
     const auto script = ResolveExisting(PathFromUtf8(backendScript_.data()));
     std::error_code ec;
     if (!std::filesystem::is_regular_file(script, ec)) { trainingMessage_ = "Cannot start: Backend script not found."; return; }
     StyleTrainingConfig config;
     config.datasetPath = dataset_.GetPath(); config.outputName = outputName_.data();
-    config.epochs = epochs_; config.resolution = resolution_; config.learningRate = learningRate_;
+    config.outputDirectory = script.parent_path().parent_path() / "models" / "lora";
+    config.baseModel = baseModel_.data(); config.triggerWord = triggerWord_.data();
+    config.epochs = epochs_; config.resolution = resolution_; config.trainBatchSize = trainBatchSize_;
+    config.gradientAccumulationSteps = gradientAccumulationSteps_; config.learningRate = learningRate_;
+    config.rank = rank_; config.mixedPrecision = mixedPrecisionIndex_ == 0 ? "fp16" : "no";
+    config.gradientCheckpointing = gradientCheckpointing_; config.seed = seed_;
     const auto configPath = script.parent_path().parent_path() / "runtime" / "training_config.json";
     if (!SaveTrainingConfig(config, configPath, trainingMessage_)) return;
-    if (!backend_.Start(PathFromUtf8(pythonPath_.data()), script, configPath, trainingMessage_)) return;
+    auto python = PathFromUtf8(pythonPath_.data());
+    if (python.has_parent_path()) python = ResolveExisting(python);
+    if (!backend_.Start(python, script, configPath, trainingMessage_)) return;
     trainingMessage_ = "Backend started.";
 }
 
-void StyleAIView::DrawTrainingTab() {
+void StyleAIView::DrawTrainingTab(HWND owner) {
     backend_.Update();
-    ImGui::TextUnformatted("Dataset"); ImGui::SameLine(150.0f);
+    constexpr float labelWidth = 165.0f;
+    const auto beginField = [](const char* label) {
+        ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(label); ImGui::SameLine(labelWidth);
+        ImGui::SetNextItemWidth(-1.0f);
+    };
+    ImGui::TextUnformatted("Dataset"); ImGui::SameLine(labelWidth);
     ImGui::TextWrapped("%s", dataset_.IsOpen() ? Utf8(dataset_.GetPath()).c_str() : "Not selected");
-    ImGui::Text("Images"); ImGui::SameLine(150.0f); ImGui::Text("%zu", dataset_.GetItems().size());
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputText("Output Name", outputName_.data(), outputName_.size());
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputInt("Epochs", &epochs_); epochs_ = std::max(1, epochs_);
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputInt("Resolution", &resolution_); resolution_ = std::max(64, resolution_);
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputFloat("Learning Rate", &learningRate_, 0.0f, 0.0f, "%.6f");
+    ImGui::Text("Images"); ImGui::SameLine(labelWidth); ImGui::Text("%zu", dataset_.GetItems().size());
+    ImGui::Separator();
+    beginField("Base Model"); ImGui::SetNextItemWidth(-92.0f); ImGui::InputText("##BaseModel", baseModel_.data(), baseModel_.size()); ImGui::SameLine();
+    if (ImGui::Button("Browse...")) { const auto folder = PickFolder(owner); if (!folder.empty()) CopyBuffer(baseModel_, Utf8(folder)); }
+    beginField("Trigger Word"); ImGui::InputText("##TriggerWord", triggerWord_.data(), triggerWord_.size());
+    beginField("Output Name"); ImGui::InputText("##OutputName", outputName_.data(), outputName_.size());
+    beginField("Epochs"); ImGui::InputInt("##Epochs", &epochs_); epochs_ = std::max(1, epochs_);
+    beginField("Resolution"); ImGui::InputInt("##Resolution", &resolution_); resolution_ = std::max(64, resolution_);
+    beginField("Batch Size"); ImGui::InputInt("##BatchSize", &trainBatchSize_); trainBatchSize_ = std::max(1, trainBatchSize_);
+    beginField("Gradient Accumulation"); ImGui::InputInt("##GradientAccumulation", &gradientAccumulationSteps_); gradientAccumulationSteps_ = std::max(1, gradientAccumulationSteps_);
+    beginField("Learning Rate"); ImGui::InputFloat("##LearningRate", &learningRate_, 0.0f, 0.0f, "%.6f");
     if (!std::isfinite(learningRate_) || learningRate_ <= 0.0f) learningRate_ = 0.0001f;
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputText("Python", pythonPath_.data(), pythonPath_.size());
-    ImGui::SetNextItemWidth(-1.0f); ImGui::InputText("Backend Script", backendScript_.data(), backendScript_.size());
+    beginField("LoRA Rank"); ImGui::InputInt("##LoraRank", &rank_); rank_ = std::clamp(rank_, 1, 256);
+    const char* precisions[] = { "fp16", "no" }; beginField("Mixed Precision"); ImGui::Combo("##MixedPrecision", &mixedPrecisionIndex_, precisions, 2);
+    ImGui::Checkbox("Gradient Checkpointing", &gradientCheckpointing_);
+    beginField("Seed"); ImGui::InputInt("##Seed", &seed_);
+    ImGui::Separator();
+    beginField("Python"); ImGui::InputText("##PythonPath", pythonPath_.data(), pythonPath_.size());
+    beginField("Backend Script"); ImGui::InputText("##BackendScript", backendScript_.data(), backendScript_.size());
     ImGui::BeginDisabled(backend_.IsRunning());
-    if (ImGui::Button("Start Backend", ImVec2(140, 0))) StartBackend();
+    if (ImGui::Button("Start Training", ImVec2(140, 0))) StartBackend();
     ImGui::EndDisabled(); ImGui::SameLine(); ImGui::BeginDisabled(!backend_.IsRunning());
     if (ImGui::Button("Stop", ImVec2(90, 0))) { backend_.Stop(); trainingMessage_ = "Backend stopped."; }
     ImGui::EndDisabled();
@@ -223,7 +247,7 @@ void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& 
             } else ImGui::TextDisabled("Select an image to preview and edit its caption.");
             ImGui::EndChild(); ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Training")) { DrawTrainingTab(); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("Training")) { DrawTrainingTab(owner); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Generate")) { ImGui::TextDisabled("Coming Soon"); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }

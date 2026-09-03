@@ -1,9 +1,11 @@
 # LayerForge Python Backend
 
-Phase 2では、C++側のプロセス起動・UTF-8 JSON・stdout/stderrストリーミング・停止処理を確認するためのテストBackendです。AIライブラリは使用しません。
+Phase 3ではStable Diffusion 1.x互換DiffusersモデルのUNetへPEFT LoRA Adapterを追加し、LayerForge Datasetで学習します。LayerForge起動時に依存関係やモデルを自動Downloadすることはありません。
 
-```powershell
-python backend/style_backend.py runtime/training_config.json
-```
+## Phase 3 Setup
 
-Phase 3では、`style_backend.py`の進捗出力契約（`[Progress] 0`〜`[Progress] 100`）を維持したままLoRA Trainerへ接続します。
+Python 3.12をインストール後、リポジトリ直下で`setup_backend.cmd`を明示的に実行してください。`runtime/python`へ専用venvを作成し、CUDA 12.8版PyTorchと`requirements.txt`をインストールします。
+
+LayerForgeのPython欄には`runtime/python/Scripts/python.exe`を指定します。Base ModelにはローカルDiffusersモデルフォルダ、またはHugging Face model IDを指定できます。初回取得後はHugging Face標準Cacheが再利用されます。
+
+完成した重みは`models/lora/<Output Name>/<Output Name>.safetensors`へ保存されます。進捗契約は`[Progress] 0`～`[Progress] 100`です。
