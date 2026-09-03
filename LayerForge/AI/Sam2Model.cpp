@@ -171,6 +171,51 @@ bool Sam2Model::Decode(const std::vector<float>& points, const std::vector<int32
     return std::isfinite(predictedIou) && logits.size() == static_cast<size_t>(MaskSize * MaskSize);
 }
 
+bool Sam2Model::LogitsToMask(const std::vector<float>& logits, const ImageData& image, MaskData& mask, std::string& error) const {
+    if (logits.size() != static_cast<size_t>(MaskSize * MaskSize) || !image.IsValid()) {
+        error = "SAM2 returned invalid mask logits."; return false;
+    }
+    mask.width = image.width; mask.height = image.height;
+    mask.grayscale.resize(static_cast<size_t>(mask.width) * mask.height);
+    for (uint32_t y = 0; y < mask.height; ++y) for (uint32_t x = 0; x < mask.width; ++x) {
+        const float sourceX = (x + 0.5f) * MaskSize / mask.width - 0.5f;
+        const float sourceY = (y + 0.5f) * MaskSize / mask.height - 0.5f;
+        const float probability = 1.0f / (1.0f + std::exp(-SampleLogit(logits.data(), sourceX, sourceY)));
+        mask.grayscale[static_cast<size_t>(y) * mask.width + x] = static_cast<uint8_t>(std::clamp(probability, 0.0f, 1.0f) * 255.0f + 0.5f);
+    }
+    return true;
+}
+
+bool Sam2Model::RefineWithPrompts(const ImageData& image, const DetectionBox& box,
+    const std::vector<Sam2PromptPoint>& prompts, MaskData& mask, float& predictedIou,
+    double& decoderMilliseconds, std::string& error) {
+    mask = {}; predictedIou = 0.0f; decoderMilliseconds = 0.0; error.clear();
+    if (!IsLoaded() || imageEmbed_.empty() || cachedWidth_ != image.width || cachedHeight_ != image.height) {
+        error = "SAM2 cached image features are not available for Smart Correction."; return false;
+    }
+    if (!image.IsValid() || !box.IsValid() || prompts.empty() || prompts.size() > 5) {
+        error = "SAM2 received invalid Smart Correction prompts."; return false;
+    }
+    try {
+        const float scaleX = static_cast<float>(InputSize) / image.width;
+        const float scaleY = static_cast<float>(InputSize) / image.height;
+        std::vector<float> points{ box.x1 * scaleX, box.y1 * scaleY, box.x2 * scaleX, box.y2 * scaleY };
+        std::vector<int32_t> labels{ 2, 3 };
+        for (const Sam2PromptPoint& prompt : prompts) {
+            if (prompt.label != 0 && prompt.label != 1) { error = "Smart Correction point label must be 0 or 1."; return false; }
+            points.push_back(prompt.x * scaleX); points.push_back(prompt.y * scaleY); labels.push_back(prompt.label);
+        }
+        std::vector<float> logits;
+        if (!Decode(points, labels, logits, predictedIou, decoderMilliseconds, error)) {
+            if (error.empty()) error = "SAM2 Smart Correction decoder returned invalid output.";
+            return false;
+        }
+        return LogitsToMask(logits, image, mask, error);
+    } catch (const Ort::Exception& exception) { error = std::string("SAM2 Smart Correction failed: ") + exception.what(); }
+      catch (const std::exception& exception) { error = std::string("SAM2 Smart Correction failed: ") + exception.what(); }
+    mask = {}; return false;
+}
+
 bool Sam2Model::Run(const ImageData& image, const DetectionBox& box, MaskData& mask, float& predictedIou,
     Sam2Timings& timings, Sam2RefinementInfo& refinement, std::string& error,
     const std::function<void()>& encoderComplete) {
@@ -234,15 +279,7 @@ bool Sam2Model::Run(const ImageData& image, const DetectionBox& box, MaskData& m
         }
         timings.decoderMilliseconds = timings.boxDecoderMilliseconds + timings.refinedDecoderMilliseconds;
 
-        mask.width = image.width; mask.height = image.height;
-        mask.grayscale.resize(static_cast<size_t>(mask.width) * mask.height);
-        for (uint32_t y = 0; y < mask.height; ++y) for (uint32_t x = 0; x < mask.width; ++x) {
-            const float sourceX = (x + 0.5f) * MaskSize / mask.width - 0.5f;
-            const float sourceY = (y + 0.5f) * MaskSize / mask.height - 0.5f;
-            const float probability = 1.0f / (1.0f + std::exp(-SampleLogit(selectedLogits.data(), sourceX, sourceY)));
-            mask.grayscale[static_cast<size_t>(y) * mask.width + x] = static_cast<uint8_t>(std::clamp(probability, 0.0f, 1.0f) * 255.0f + 0.5f);
-        }
-        return true;
+        return LogitsToMask(selectedLogits, image, mask, error);
     } catch (const Ort::Exception& exception) { error = std::string("SAM2 inference failed: ") + exception.what(); }
       catch (const std::exception& exception) { error = std::string("SAM2 postprocess failed: ") + exception.what(); }
     mask = {}; return false;

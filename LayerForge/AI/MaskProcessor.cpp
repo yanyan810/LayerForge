@@ -21,6 +21,15 @@ bool MaskProcessor::Process(const MaskData& rawMask, const ImageData& original, 
         return false;
     }
 
+    if (!Adjust(rawMask, settings, adjustedMask, error)) return false;
+    return Compose(adjustedMask, original, foreground, background, error);
+}
+
+bool MaskProcessor::Adjust(const MaskData& rawMask, const MaskAdjustmentSettings& settings,
+    MaskData& adjustedMask, std::string& error) const {
+    error.clear();
+    if (!rawMask.IsValid()) { error = "Raw Mask is not available."; return false; }
+
     const float threshold = std::clamp(settings.threshold, 0.0f, 1.0f);
     const float softness = std::clamp(settings.edgeSoftness, 0.0f, 0.5f);
     const float lower = std::max(0.0f, threshold - softness);
@@ -38,7 +47,7 @@ bool MaskProcessor::Process(const MaskData& rawMask, const ImageData& original, 
         const uint8_t alpha = alphaLookup[rawMask.grayscale[index]];
         adjustedMask.grayscale[index] = alpha;
     }
-    return Compose(adjustedMask, original, foreground, background, error);
+    return true;
 }
 
 bool MaskProcessor::Compose(const MaskData& mask, const ImageData& original,

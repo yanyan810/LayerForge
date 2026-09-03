@@ -35,6 +35,7 @@ public:
     bool EndStroke();
     bool Undo();
     bool Redo();
+    bool CommitFinal(const MaskData& autoMask, const MaskData& finalMask);
     void ClearStrokePreview() noexcept { strokePreview_.clear(); }
 
     bool Apply(const MaskData& autoMask, MaskData& finalMask) const;

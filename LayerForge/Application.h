@@ -8,6 +8,8 @@
 #include "AI/MaskProcessor.h"
 #include "AI/AIModelManager.h"
 #include "Editor/MaskEditor.h"
+#include "Editor/SmartMaskCorrection.h"
+#include "StyleAI/StyleAIView.h"
 
 #include <Windows.h>
 #include <atomic>
@@ -16,21 +18,28 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <vector>
 
 class Application {
 public:
     int Run(HINSTANCE instance, int showCommand);
 
 private:
+    struct WorkerResult;
     bool Initialize(HINSTANCE instance, int showCommand);
     void Shutdown();
     void OpenImage();
     void StartCharacterAnalysis();
     void StartHairAnalysis();
+    void StartSmartHairCorrection(const SmartStrokeRequest& request);
     void PollAnalysisResult();
     void UpdateProgressState();
     void ApplyCharacterResult(CharacterAnalysisResult&& result);
     void ApplyHairResult(HairAnalysisResult&& result);
+    void ApplySmartHairResult(WorkerResult&& result);
+    void ApplySmartCandidate();
+    void CancelSmartCandidate();
+    void ResetManualHairEdit();
     void CancelActiveAnalysis();
     [[nodiscard]] AIModelPaths ModelPaths() const;
     void RebuildDerivedLayers();
@@ -46,6 +55,7 @@ private:
     HWND window_ = nullptr;
     GraphicsDevice graphics_;
     EditorUI editorUI_;
+    StyleAIView styleAIView_;
     ImageLoader imageLoader_;
     ImageData image_;
     GraphicsDevice::Texture texture_;
@@ -72,6 +82,20 @@ private:
     GraphicsDevice::Texture hairEditPreviewTexture_;
     GraphicsDevice::Texture hairTexture_;
     MaskEditor hairMaskEditor_;
+    SmartMaskCorrection smartMaskCorrection_;
+    MaskData smartCandidateMask_;
+    ImageData smartDifferenceImage_;
+    GraphicsDevice::Texture smartCandidateTexture_;
+    GraphicsDevice::Texture smartDifferenceTexture_;
+    std::vector<Sam2PromptPoint> smartPromptPoints_;
+    SmartCorrectionRoi smartCorrectionRoi_;
+    SmartCorrectionMode smartCorrectionMode_ = SmartCorrectionMode::Add;
+    double smartPromptMilliseconds_ = 0.0;
+    double smartDecoderMilliseconds_ = 0.0;
+    double smartMaskMilliseconds_ = 0.0;
+    double smartTextureMilliseconds_ = 0.0;
+    double smartTotalMilliseconds_ = 0.0;
+    float smartPredictedIou_ = 0.0f;
     DetectionBox hairBox_;
     HairAnalysisStage hairAnalysisStage_ = HairAnalysisStage::NotReady;
     double groundingDinoMilliseconds_ = 0.0;
@@ -91,13 +115,18 @@ private:
     bool hairManualUpdateRequested_ = false;
     bool initialized_ = false;
 
-    enum class AnalysisJobType { None, Character, Hair };
+    enum class AnalysisJobType { None, Character, Hair, SmartHair };
     struct WorkerResult {
         AnalysisJobType type = AnalysisJobType::None;
         uint64_t jobId = 0;
         uint64_t imageGeneration = 0;
         CharacterAnalysisResult character;
         HairAnalysisResult hair;
+        SmartHairAnalysisResult smartHair;
+        SmartStrokeRequest smartRequest;
+        MaskData smartCandidate;
+        double smartMaskMilliseconds = 0.0;
+        double smartTotalMilliseconds = 0.0;
     };
 
     std::jthread analysisWorker_;

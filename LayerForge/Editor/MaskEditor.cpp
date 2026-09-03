@@ -94,6 +94,20 @@ bool MaskEditor::Redo() {
     return true;
 }
 
+bool MaskEditor::CommitFinal(const MaskData& autoMask, const MaskData& finalMask) {
+    if (strokeActive_ || !IsInitialized() || !autoMask.IsValid() || !finalMask.IsValid() ||
+        autoMask.width != width_ || autoMask.height != height_ || finalMask.width != width_ || finalMask.height != height_) return false;
+    std::vector<int8_t> next(manual_.size());
+    for (size_t index = 0; index < next.size(); ++index) {
+        const int automatic = autoMask.grayscale[index], target = finalMask.grayscale[index];
+        if (target > automatic) next[index] = static_cast<int8_t>(std::clamp(static_cast<int>(std::lround(target * 127.0 / 255.0)), 1, 127));
+        else if (target < automatic) next[index] = static_cast<int8_t>(-std::clamp(static_cast<int>(std::lround((255 - target) * 127.0 / 255.0)), 1, 127));
+    }
+    if (next == manual_) return false;
+    PushUndo(std::move(manual_)); manual_ = std::move(next); redo_.clear(); strokePreview_.clear();
+    return true;
+}
+
 bool MaskEditor::Stamp(float imageX, float imageY) {
     if (!IsInitialized() || imageX < 0.0f || imageY < 0.0f || imageX >= width_ || imageY >= height_) return false;
     // A one-pixel brush must still hit the nearest pixel when the mapped cursor

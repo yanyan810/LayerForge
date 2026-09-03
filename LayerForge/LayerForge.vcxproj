@@ -157,9 +157,12 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="EditorUI.h" />
     <ClInclude Include="Editor\MaskEditor.h" />
+    <ClInclude Include="Editor\SmartMaskCorrection.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="ImageData.h" />
     <ClInclude Include="ImageLoader.h" />
+    <ClInclude Include="StyleAI\StyleAIView.h" />
+    <ClInclude Include="StyleAI\StyleDataset.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
@@ -180,8 +183,11 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="EditorUI.cpp" />
     <ClCompile Include="Editor\MaskEditor.cpp" />
+    <ClCompile Include="Editor\SmartMaskCorrection.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="ImageLoader.cpp" />
+    <ClCompile Include="StyleAI\StyleAIView.cpp" />
+    <ClCompile Include="StyleAI\StyleDataset.cpp" />
     <ClCompile Include="WinMain.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />

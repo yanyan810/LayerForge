@@ -20,6 +20,8 @@ struct MaskAdjustmentSettings {
 
 class MaskProcessor {
 public:
+    bool Adjust(const MaskData& rawMask, const MaskAdjustmentSettings& settings,
+        MaskData& adjustedMask, std::string& error) const;
     bool Process(const MaskData& rawMask, const ImageData& original, const MaskAdjustmentSettings& settings,
         MaskData& adjustedMask, ImageData& foreground, ImageData& background, std::string& error) const;
     bool Compose(const MaskData& mask, const ImageData& original,

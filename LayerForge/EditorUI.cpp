@@ -11,7 +11,10 @@
 namespace {
 void DrawFittedTexture(const GraphicsDevice::Texture* texture, uint32_t width, uint32_t height, bool checkerboard,
     const DetectionBox* overlay = nullptr, const std::vector<Sam2PromptPoint>* prompts = nullptr,
-    MaskEditor* maskEditor = nullptr, bool editEnabled = false, const std::function<void()>* manualChanged = nullptr) {
+    MaskEditor* maskEditor = nullptr, bool editEnabled = false, const std::function<void()>* manualChanged = nullptr,
+    SmartMaskCorrection* smartCorrection = nullptr, SmartCorrectionMode smartMode = SmartCorrectionMode::Add,
+    float smartSize = 1.0f, bool smartEnabled = false,
+    const std::function<void(const SmartStrokeRequest&)>* smartStrokeCompleted = nullptr) {
     const ImVec2 available = ImGui::GetContentRegionAvail();
     if (!texture || !texture->IsValid() || width == 0 || height == 0) {
         const char* message = "Not available. Run Analyze Image first.";
@@ -102,6 +105,47 @@ void DrawFittedTexture(const GraphicsDevice::Texture* texture, uint32_t width, u
             if (maskEditor->EndStroke() && manualChanged) (*manualChanged)();
         }
     }
+    if (smartCorrection && smartEnabled) {
+        const float scaleX = size.x / width, scaleY = size.y / height;
+        const auto& stroke = smartCorrection->StrokePreview();
+        const ImU32 color = smartCorrection->Mode() == SmartCorrectionMode::Add ?
+            IM_COL32(55, 255, 105, 220) : IM_COL32(255, 65, 65, 220);
+        if (!stroke.empty()) {
+            const float radius = std::max(1.0f, smartCorrection->BrushSize() * 0.5f * scaleX);
+            for (size_t index = 0; index < stroke.size(); ++index) {
+                const ImVec2 point(minimum.x + stroke[index].x * scaleX, minimum.y + stroke[index].y * scaleY);
+                drawList->AddCircle(point, radius, color, 32, 2.0f);
+                if (index > 0) {
+                    const ImVec2 previous(minimum.x + stroke[index - 1].x * scaleX,
+                        minimum.y + stroke[index - 1].y * scaleY);
+                    drawList->AddLine(previous, point, color, 3.0f);
+                }
+            }
+        }
+        const bool hovered = ImGui::IsItemHovered();
+        const ImVec2 mouse = ImGui::GetIO().MousePos;
+        float imageX = 0.0f, imageY = 0.0f;
+        const bool mapped = hovered && MaskEditor::ScreenToImage(mouse.x, mouse.y, minimum.x, minimum.y,
+            size.x, size.y, width, height, imageX, imageY);
+        if (mapped) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+            const ImU32 cursorColor = smartMode == SmartCorrectionMode::Add ?
+                IM_COL32(75, 255, 115, 255) : IM_COL32(255, 80, 80, 255);
+            const float radius = std::max(1.0f, smartSize * 0.5f * scaleX);
+            drawList->AddCircle(mouse, radius, cursorColor, 48, 2.0f);
+            drawList->AddText(ImVec2(mouse.x + radius + 6.0f, mouse.y + 5.0f), cursorColor,
+                smartMode == SmartCorrectionMode::Add ? "SMART ADD" : "SMART ERASE");
+        }
+        if (mapped && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            smartCorrection->BeginStroke(imageX, imageY, smartSize, smartMode, width, height);
+        } else if (mapped && ImGui::IsMouseDown(ImGuiMouseButton_Left) && smartCorrection->IsStrokeActive()) {
+            smartCorrection->ContinueStroke(imageX, imageY);
+        }
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && smartCorrection->IsStrokeActive()) {
+            SmartStrokeRequest request;
+            if (smartCorrection->EndStroke(request) && smartStrokeCompleted) (*smartStrokeCompleted)(request);
+        }
+    }
 }
 
 const char* HairStatusText(HairAnalysisStage stage) {
@@ -176,6 +220,11 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     const ImageData* hairEditPreview, const GraphicsDevice::Texture* hairEditPreviewTexture,
     const ImageData* hairImage, const GraphicsDevice::Texture* hairTexture,
     MaskAdjustmentSettings& maskSettings, MaskAdjustmentSettings& hairMaskSettings, MaskEditor& hairMaskEditor,
+    SmartMaskCorrection& smartMaskCorrection, const std::vector<Sam2PromptPoint>* smartPrompts,
+    const MaskData* smartCandidateMask, const GraphicsDevice::Texture* smartCandidateTexture,
+    const ImageData* smartDifferenceImage, const GraphicsDevice::Texture* smartDifferenceTexture,
+    bool smartCandidateAvailable, double smartPromptMilliseconds, double smartDecoderMilliseconds,
+    double smartMaskMilliseconds, double smartTextureMilliseconds, double smartTotalMilliseconds, float smartPredictedIou,
     InferenceDevice& inferenceDevice,
     const std::string& error, const std::string& providerWarning, bool analyzing, HairAnalysisStage hairStage,
     double inferenceMilliseconds, double maskUpdateMilliseconds, double groundingDinoMilliseconds,
@@ -186,6 +235,9 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     const std::function<void()>& openImage, const std::function<void()>& analyzeImage,
     const std::function<void()>& analyzeHair, const std::function<void()>& maskSettingsChanged,
     const std::function<void()>& hairMaskSettingsChanged, const std::function<void()>& hairManualChanged,
+    const std::function<void(const SmartStrokeRequest&)>& smartStrokeCompleted,
+    const std::function<void()>& applySmartCandidate, const std::function<void()>& cancelSmartCandidate,
+    const std::function<void()>& resetManualHairEdit,
     const std::function<void()>& inferenceDeviceChanged) {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -195,6 +247,13 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     if (hairMaskEditor.IsStrokeActive() && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         if (hairMaskEditor.EndStroke()) hairManualChanged();
     }
+    if (smartMaskCorrection.IsStrokeActive() && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+        SmartStrokeRequest request;
+        if (smartMaskCorrection.EndStroke(request)) smartStrokeCompleted(request);
+    }
+    if (smartCandidateAvailable && !smartCandidateWasAvailable_) selectSmartDifferenceTab_ = true;
+    if (!smartCandidateAvailable) selectSmartDifferenceTab_ = false;
+    smartCandidateWasAvailable_ = smartCandidateAvailable;
 
     ImGui::TextUnformatted("LayerForge");
     ImGui::SameLine(ImGui::GetWindowWidth() - 145.0f);
@@ -253,7 +312,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     }
     ImGui::Spacing();
 
-    const float controlsHeight = 330.0f;
+    const float controlsHeight = 400.0f;
     ImVec2 previewArea = ImGui::GetContentRegionAvail();
     previewArea.y = std::max(80.0f, previewArea.y - controlsHeight);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.025f, 0.03f, 0.04f, 1.0f));
@@ -275,12 +334,30 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
             const ImGuiTabItemFlags maskEditFlags = selectMaskEditTab_ ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
             if (ImGui::BeginTabItem("Mask Edit", nullptr, maskEditFlags)) {
                 selectMaskEditTab_ = false;
+                const bool smartTool = hairEditTool_ < 2;
                 DrawFittedTexture(hairEditPreviewTexture, hairEditPreview ? hairEditPreview->width : 0,
-                    hairEditPreview ? hairEditPreview->height : 0, false, nullptr, nullptr, &hairMaskEditor,
-                    hairEditMode_ && hairStage == HairAnalysisStage::Complete && !analyzing, &hairManualChanged);
+                    hairEditPreview ? hairEditPreview->height : 0, false, nullptr, smartPrompts, &hairMaskEditor,
+                    hairEditMode_ && !smartTool && hairStage == HairAnalysisStage::Complete && !analyzing && !smartCandidateAvailable,
+                    &hairManualChanged, &smartMaskCorrection,
+                    hairEditTool_ == 0 ? SmartCorrectionMode::Add : SmartCorrectionMode::Erase,
+                    hairMaskEditor.Settings().size,
+                    hairEditMode_ && smartTool && hairStage == HairAnalysisStage::Complete && !analyzing && !smartCandidateAvailable,
+                    &smartStrokeCompleted);
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Hair Final")) { DrawFittedTexture(hairFinalMaskTexture, hairFinalMask ? hairFinalMask->width : 0, hairFinalMask ? hairFinalMask->height : 0, false); ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem(smartCandidateAvailable ? "Hair Final (Before)" : "Hair Final")) { DrawFittedTexture(hairFinalMaskTexture, hairFinalMask ? hairFinalMask->width : 0, hairFinalMask ? hairFinalMask->height : 0, false); ImGui::EndTabItem(); }
+            if (smartCandidateAvailable && ImGui::BeginTabItem("Smart Candidate")) {
+                DrawFittedTexture(smartCandidateTexture, smartCandidateMask ? smartCandidateMask->width : 0,
+                    smartCandidateMask ? smartCandidateMask->height : 0, false);
+                ImGui::EndTabItem();
+            }
+            const ImGuiTabItemFlags differenceFlags = selectSmartDifferenceTab_ ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+            if (smartCandidateAvailable && ImGui::BeginTabItem("Smart Difference", nullptr, differenceFlags)) {
+                selectSmartDifferenceTab_ = false;
+                DrawFittedTexture(smartDifferenceTexture, smartDifferenceImage ? smartDifferenceImage->width : 0,
+                    smartDifferenceImage ? smartDifferenceImage->height : 0, false);
+                ImGui::EndTabItem();
+            }
             if (ImGui::BeginTabItem("Hair RGBA")) { DrawFittedTexture(hairTexture, hairImage ? hairImage->width : 0, hairImage ? hairImage->height : 0, true); ImGui::EndTabItem(); }
             ImGui::EndTabBar();
         }
@@ -296,7 +373,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     ImGui::Spacing();
 
     const bool hasRawMask = rawMask && rawMask->IsValid();
-    ImGui::BeginChild("Character Controls", ImVec2(ImGui::GetContentRegionAvail().x * 0.49f, 215.0f), ImGuiChildFlags_Borders);
+    ImGui::BeginChild("Character Controls", ImVec2(ImGui::GetContentRegionAvail().x * 0.49f, 285.0f), ImGuiChildFlags_Borders);
     ImGui::TextUnformatted("Character"); ImGui::SameLine();
     ImGui::TextDisabled("U2NETP: %s (%s)", ModelLoadStateName(u2netState), InferenceProviderName(u2netProvider));
     ImGui::BeginDisabled(!hasRawMask || analyzing);
@@ -317,7 +394,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("Hair Controls", ImVec2(0.0f, 215.0f), ImGuiChildFlags_Borders);
+    ImGui::BeginChild("Hair Controls", ImVec2(0.0f, 285.0f), ImGuiChildFlags_Borders);
     ImGui::Text("Hair: %s", HairStatusText(hairStage));
     if (samRefinement && !samRefinement->points.empty()) {
         ImGui::SameLine();
@@ -331,7 +408,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
         ModelLoadStateName(samDecoderState), InferenceProviderName(samDecoderProvider));
     const bool hasHairMask = hairRawMask && hairRawMask->IsValid();
     const bool hairBusy = analyzing;
-    ImGui::BeginDisabled(!hasHairMask || hairBusy);
+    ImGui::BeginDisabled(!hasHairMask || hairBusy || smartCandidateAvailable);
     ImGui::SetNextItemWidth(-1.0f);
     const bool hairThresholdChanged = ImGui::SliderFloat("Threshold##Hair", &hairMaskSettings.threshold, 0.0f, 1.0f, "%.2f");
     ImGui::SetNextItemWidth(-1.0f);
@@ -341,7 +418,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     ImGui::EndDisabled();
     if (hairThresholdChanged || hairSoftnessChanged || hairReset) hairMaskSettingsChanged();
     ImGui::SameLine(0.0f, 12.0f);
-    ImGui::BeginDisabled(!image || !image->IsValid() || !hasRawMask || analyzing || hairBusy);
+    ImGui::BeginDisabled(!image || !image->IsValid() || !hasRawMask || analyzing || hairBusy || smartCandidateAvailable);
     if (ImGui::Button(hairBusy ? "Analyzing..." : "Analyze Hair", ImVec2(145.0f, 0.0f))) analyzeHair();
     ImGui::EndDisabled();
     if (groundingDinoMilliseconds > 0.0 || samTimings.encoderMilliseconds > 0.0 || samTimings.decoderMilliseconds > 0.0) {
@@ -350,7 +427,7 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
             samTimings.refinedDecoderMilliseconds, hairTotalMilliseconds);
     }
     if (samPredictedIou > 0.0f) { ImGui::SameLine(); ImGui::TextDisabled("IoU %.3f | Mask %.1f ms", samPredictedIou, hairMaskUpdateMilliseconds); }
-    if (hairStage != HairAnalysisStage::Complete) hairEditMode_ = false;
+    if (!hairMaskEditor.IsInitialized()) hairEditMode_ = false;
     const bool canEdit = hairStage == HairAnalysisStage::Complete && hairMaskEditor.IsInitialized() && !analyzing;
     ImGui::BeginDisabled(!canEdit);
     if (ImGui::Checkbox("Edit Hair Mask", &hairEditMode_) && hairEditMode_) selectMaskEditTab_ = true;
@@ -358,9 +435,17 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
     if (hairEditMode_) {
         MaskBrushSettings& brush = hairMaskEditor.Settings();
         ImGui::SameLine();
-        if (ImGui::RadioButton("Add", brush.mode == MaskBrushMode::Add)) brush.mode = MaskBrushMode::Add;
+        ImGui::TextDisabled("Correction:"); ImGui::SameLine();
+        if (ImGui::RadioButton("Smart Add", hairEditTool_ == 0)) hairEditTool_ = 0;
         ImGui::SameLine();
-        if (ImGui::RadioButton("Erase", brush.mode == MaskBrushMode::Erase)) brush.mode = MaskBrushMode::Erase;
+        if (ImGui::RadioButton("Smart Erase", hairEditTool_ == 1)) hairEditTool_ = 1;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Brush Add", hairEditTool_ == 2)) { hairEditTool_ = 2; brush.mode = MaskBrushMode::Add; }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Brush Erase", hairEditTool_ == 3)) { hairEditTool_ = 3; brush.mode = MaskBrushMode::Erase; }
+        if (hairEditTool_ == 2) brush.mode = MaskBrushMode::Add;
+        if (hairEditTool_ == 3) brush.mode = MaskBrushMode::Erase;
+        ImGui::BeginDisabled(smartCandidateAvailable);
         ImGui::SameLine();
         ImGui::BeginDisabled(!hairMaskEditor.CanUndo());
         if (ImGui::Button("Undo")) { if (hairMaskEditor.Undo()) hairManualChanged(); }
@@ -369,18 +454,35 @@ void EditorUI::Draw(const ImageData* image, const GraphicsDevice::Texture* textu
         if (ImGui::Button("Redo")) { if (hairMaskEditor.Redo()) hairManualChanged(); }
         ImGui::EndDisabled(); ImGui::SameLine();
         ImGui::BeginDisabled(!hairMaskEditor.HasManualEdit());
-        if (ImGui::Button("Reset Manual Edit")) { hairMaskEditor.ResetManualEdit(); hairManualChanged(); }
+        if (ImGui::Button("Reset Manual Edit")) resetManualHairEdit();
         ImGui::EndDisabled();
         ImGui::SetNextItemWidth(-1.0f); ImGui::SliderFloat("Brush Size", &brush.size, 1.0f, 200.0f, "%.0f px");
+        const bool brushTool = hairEditTool_ >= 2;
+        ImGui::BeginDisabled(!brushTool);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.49f);
         ImGui::SliderFloat("Strength", &brush.strength, 0.0f, 1.0f, "%.2f");
         ImGui::SameLine(); ImGui::SetNextItemWidth(-1.0f);
         ImGui::SliderFloat("Hardness", &brush.hardness, 0.0f, 1.0f, "%.2f");
+        ImGui::EndDisabled();
         const ImGuiIO& io = ImGui::GetIO();
         if (canEdit && io.KeyCtrl && !io.WantTextInput) {
             if (ImGui::IsKeyPressed(ImGuiKey_Z, false) && hairMaskEditor.Undo()) hairManualChanged();
             if (ImGui::IsKeyPressed(ImGuiKey_Y, false) && hairMaskEditor.Redo()) hairManualChanged();
         }
+        ImGui::EndDisabled();
+        if (analyzing && smartPrompts && !smartPrompts->empty()) {
+            ImGui::TextColored(ImVec4(0.35f, 0.72f, 1.0f, 1.0f), "Refining mask... cached SAM2 Decoder only");
+        }
+    }
+    if (smartCandidateAvailable) {
+        ImGui::TextColored(ImVec4(0.40f, 0.90f, 0.50f, 1.0f),
+            "Candidate ready - green adds, red removes. Review Before / Candidate / Difference.");
+        if (ImGui::Button("Apply Smart Correction", ImVec2(190.0f, 0.0f))) applySmartCandidate();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel Candidate", ImVec2(155.0f, 0.0f))) cancelSmartCandidate();
+        ImGui::TextDisabled("Prompt %.2f | Decoder %.1f | Mask %.1f | Texture %.1f | Total %.1f ms | IoU %.3f",
+            smartPromptMilliseconds, smartDecoderMilliseconds, smartMaskMilliseconds, smartTextureMilliseconds,
+            smartTotalMilliseconds, smartPredictedIou);
     }
     ImGui::EndChild();
     ImGui::End();

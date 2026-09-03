@@ -31,6 +31,9 @@
     <ClInclude Include="AI\Sam2Model.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="AI\InferenceDevice.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="Editor\MaskEditor.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="Editor\SmartMaskCorrection.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StyleAI\StyleAIView.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StyleAI\StyleDataset.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AI\AIModelManager.cpp"><Filter>ソース ファイル</Filter></ClCompile>
@@ -45,5 +48,8 @@
     <ClCompile Include="AI\Sam2Model.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="AI\InferenceDevice.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="Editor\MaskEditor.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="Editor\SmartMaskCorrection.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StyleAI\StyleAIView.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StyleAI\StyleDataset.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
 </Project>
