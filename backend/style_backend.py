@@ -11,20 +11,33 @@ def fail(message: str) -> int:
     print(f"[ERROR] {message}", file=sys.stderr, flush=True)
     return 1
 
-def load_config(path: Path) -> dict:
+def load_config(path: Path, mode: str) -> dict:
     with path.open("r", encoding="utf-8") as stream:
         config = json.load(stream)
-    for key in ("dataset", "output_name", "output_dir", "base_model"):
+    required = ("dataset", "output_name", "output_dir", "base_model") if mode == "train" else ("base_model", "lora_path", "prompt", "output_dir")
+    for key in required:
         if not str(config.get(key, "")).strip():
             raise ValueError(f"Training config field '{key}' is required.")
     return config
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        return fail("Usage: style_backend.py <training_config.json>")
+    if len(sys.argv) == 2:
+        mode, config_argument = "train", sys.argv[1]
+    elif len(sys.argv) == 3 and sys.argv[1] in {"train", "generate"}:
+        mode, config_argument = sys.argv[1], sys.argv[2]
+    else:
+        return fail("Usage: style_backend.py <train|generate> <config.json>")
     try:
-        config = load_config(Path(sys.argv[1]))
+        config = load_config(Path(config_argument), mode)
         out("Backend started")
+        if mode == "generate":
+            try:
+                import torch
+            except ImportError:
+                return fail("Missing Python package: torch. Install backend/requirements.txt")
+            if not torch.cuda.is_available(): return fail("CUDA is not available.")
+            from generator.image_generator import generate_image
+            generate_image(config, out); out("Complete"); return 0
         from trainer.dataset_loader import load_dataset_items
         items = load_dataset_items(Path(config["dataset"]), str(config.get("trigger_word", "lfstyle")))
         out("Loading dataset...")

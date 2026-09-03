@@ -8,6 +8,7 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <fstream>
 
 using Microsoft::WRL::ComPtr;
 
@@ -40,6 +41,27 @@ std::filesystem::path PickFolder(HWND owner) {
     ComPtr<IShellItem> item; PWSTR value = nullptr;
     if (FAILED(dialog->GetResult(&item)) || FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &value))) return {};
     std::filesystem::path result(value); CoTaskMemFree(value); return result;
+}
+
+std::filesystem::path PickLoraFile(HWND owner) {
+    ComPtr<IFileOpenDialog> dialog;
+    if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog)))) return {};
+    dialog->SetOptions(FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST | FOS_NOCHANGEDIR);
+    const COMDLG_FILTERSPEC filters[] = { { L"LoRA Weights", L"*.safetensors" }, { L"All Files", L"*.*" } };
+    dialog->SetFileTypes(2, filters); if (FAILED(dialog->Show(owner))) return {};
+    ComPtr<IShellItem> item; PWSTR value = nullptr;
+    if (FAILED(dialog->GetResult(&item)) || FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &value))) return {};
+    std::filesystem::path result(value); CoTaskMemFree(value); return result;
+}
+
+bool JsonString(const std::filesystem::path& path, const char* key, std::string& value) {
+    std::ifstream stream(path, std::ios::binary); if (!stream) return false;
+    const std::string json((std::istreambuf_iterator<char>(stream)), {});
+    size_t at = json.find(std::string("\"") + key + "\""); if (at == std::string::npos) return false;
+    at = json.find(':', at); at = json.find('"', at); if (at == std::string::npos) return false; ++at;
+    value.clear(); bool escaped = false;
+    for (; at < json.size(); ++at) { const char c=json[at]; if(escaped){value+=c;escaped=false;} else if(c=='\\')escaped=true; else if(c=='"')return true; else value+=c; }
+    return false;
 }
 
 void CopyBuffer(auto& destination, const std::string& value) {
@@ -200,10 +222,75 @@ void StyleAIView::DrawTrainingTab(HWND owner) {
     ImGui::BeginChild("BackendConsole", ImVec2(0, 230), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
     const auto logs = backend_.GetLogs();
     for (const auto& log : logs) {
-        if (log.isError) ImGui::TextColored(ImVec4(1.0f, .4f, .4f, 1.0f), "[ERR] %s", log.text.c_str());
+        if (log.isError && log.text.rfind("[ERROR]", 0) == 0) ImGui::TextColored(ImVec4(1.0f, .4f, .4f, 1.0f), "[ERR] %s", log.text.c_str());
+        else if (log.isError) ImGui::TextColored(ImVec4(1.0f, .78f, .30f, 1.0f), "[WARN] %s", log.text.c_str());
         else ImGui::TextUnformatted(("[OUT] " + log.text).c_str());
     }
     if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 4.0f) ImGui::SetScrollHereY(1.0f);
+    ImGui::EndChild();
+}
+
+void StyleAIView::SelectLora(HWND owner) {
+    const auto selected = PickLoraFile(owner); if (selected.empty()) return;
+    CopyBuffer(loraPath_, Utf8(selected));
+    std::string value;
+    if (JsonString(selected.parent_path() / "training_info.json", "base_model", value)) CopyBuffer(generationBaseModel_, value);
+    if (JsonString(selected.parent_path() / "training_info.json", "trigger_word", value)) CopyBuffer(generationTrigger_, value);
+}
+
+void StyleAIView::StartGeneration() {
+    generationMessage_.clear(); generatedPath_.clear(); generatedImage_ = {}; generatedTexture_ = {};
+    if (generationBaseModel_[0] == '\0') { generationMessage_ = "Cannot generate: Base model is empty."; return; }
+    if (prompt_[0] == '\0') { generationMessage_ = "Cannot generate: Prompt is empty."; return; }
+    const auto lora = ResolveExisting(PathFromUtf8(loraPath_.data())); std::error_code ec;
+    if (!std::filesystem::is_regular_file(lora, ec)) { generationMessage_ = "Cannot generate: LoRA file not found."; return; }
+    const auto script = ResolveExisting(PathFromUtf8(backendScript_.data()));
+    if (!std::filesystem::is_regular_file(script, ec)) { generationMessage_ = "Cannot generate: Backend script not found."; return; }
+    if (generationWidth_ < 64 || generationHeight_ < 64 || generationWidth_ % 8 || generationHeight_ % 8) { generationMessage_ = "Cannot generate: Width and height must be multiples of 8."; return; }
+    StyleGenerationConfig config; config.baseModel=generationBaseModel_.data(); config.loraPath=lora; config.prompt=prompt_.data();
+    config.negativePrompt=negativePrompt_.data(); config.triggerWord=generationTrigger_.data(); config.loraStrength=loraStrength_;
+    config.width=generationWidth_; config.height=generationHeight_; config.steps=generationSteps_; config.guidanceScale=guidanceScale_; config.seed=generationSeed_;
+    config.outputDirectory=script.parent_path().parent_path()/"Outputs"/"Generated";
+    const auto configPath=script.parent_path().parent_path()/"runtime"/"generation_config.json";
+    if(!SaveGenerationConfig(config,configPath,generationMessage_)) return;
+    auto python=PathFromUtf8(pythonPath_.data()); if(python.has_parent_path()) python=ResolveExisting(python);
+    if(!generationBackend_.Start(python,script,L"generate",configPath,generationMessage_)) return;
+    generationMessage_="Generation started.";
+}
+
+void StyleAIView::UpdateGeneratedPreview(GraphicsDevice& graphics, const ImageLoader& loader) {
+    if (generationBackend_.IsRunning() || generatedImage_.IsValid()) return;
+    for (const auto& log : generationBackend_.GetLogs()) if (!log.isError && log.text.rfind("[Result] ",0)==0) {
+        const auto result=PathFromUtf8(log.text.c_str()+9); ImageData image; std::string error;
+        if(loader.Load(result,image,error) && graphics.CreateTexture(image,generatedTexture_,error)){generatedImage_=std::move(image);generatedPath_=result;generationMessage_="Generation completed.";}
+        else generationMessage_=error; break;
+    }
+}
+
+void StyleAIView::DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const ImageLoader& loader) {
+    generationBackend_.Update(); UpdateGeneratedPreview(graphics,loader);
+    constexpr float label=145.0f;
+    auto field=[](const char* text){ImGui::AlignTextToFramePadding();ImGui::TextUnformatted(text);ImGui::SameLine(label);ImGui::SetNextItemWidth(-1);};
+    field("Base Model"); ImGui::InputText("##GenBaseModel",generationBaseModel_.data(),generationBaseModel_.size());
+    field("LoRA"); ImGui::SetNextItemWidth(-92); ImGui::InputText("##LoraPath",loraPath_.data(),loraPath_.size()); ImGui::SameLine(); if(ImGui::Button("Browse...##Lora"))SelectLora(owner);
+    field("Trigger Word"); ImGui::InputText("##GenTrigger",generationTrigger_.data(),generationTrigger_.size());
+    ImGui::TextUnformatted("Prompt"); ImGui::InputTextMultiline("##Prompt",prompt_.data(),prompt_.size(),ImVec2(-1,58));
+    ImGui::TextUnformatted("Negative Prompt"); ImGui::InputTextMultiline("##NegativePrompt",negativePrompt_.data(),negativePrompt_.size(),ImVec2(-1,45));
+    ImGui::SliderFloat("LoRA Strength",&loraStrength_,0,2,"%.2f");
+    field("Width"); ImGui::InputInt("##GenWidth",&generationWidth_); field("Height"); ImGui::InputInt("##GenHeight",&generationHeight_);
+    ImGui::SliderInt("Steps",&generationSteps_,1,100); ImGui::SliderFloat("Guidance Scale",&guidanceScale_,1,20,"%.1f");
+    field("Seed (-1 = random)"); ImGui::InputScalar("##GenSeed",ImGuiDataType_S64,&generationSeed_);
+    ImGui::BeginDisabled(generationBackend_.IsRunning()); if(ImGui::Button("Generate Image",ImVec2(140,0)))StartGeneration(); ImGui::EndDisabled(); ImGui::SameLine();
+    ImGui::BeginDisabled(!generationBackend_.IsRunning()); if(ImGui::Button("Stop##Generate",ImVec2(90,0))){generationBackend_.Stop();generationMessage_="Generation stopped.";} ImGui::EndDisabled();
+    if(!generationMessage_.empty())ImGui::TextWrapped("%s",generationMessage_.c_str());
+    ImGui::Text("Status: %s",StatusName(generationBackend_.GetStatus())); ImGui::ProgressBar(generationBackend_.GetProgress(),ImVec2(-1,0));
+    if(generatedImage_.IsValid()&&generatedTexture_.IsValid()){
+        const ImVec2 available(ImGui::GetContentRegionAvail().x,260); const float scale=std::min(available.x/generatedImage_.width,available.y/generatedImage_.height);
+        ImGui::Image(static_cast<ImTextureID>(generatedTexture_.gpuHandle.ptr),ImVec2(generatedImage_.width*scale,generatedImage_.height*scale));
+        ImGui::TextWrapped("Output: %s",Utf8(generatedPath_).c_str());
+    }
+    ImGui::BeginChild("GenerationConsole",ImVec2(0,160),ImGuiChildFlags_Borders);
+    for(const auto& log:generationBackend_.GetLogs()) if(log.isError && log.text.rfind("[ERROR]",0)==0) ImGui::TextColored(ImVec4(1,.35f,.35f,1),"%s",log.text.c_str()); else ImGui::TextWrapped("%s",log.text.c_str());
     ImGui::EndChild();
 }
 
@@ -248,10 +335,10 @@ void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& 
             ImGui::EndChild(); ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Training")) { DrawTrainingTab(owner); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem("Generate")) { ImGui::TextDisabled("Coming Soon"); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("Generate")) { DrawGenerateTab(owner, graphics, loader); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::End();
 }
 
-void StyleAIView::Shutdown() { backend_.Stop(); previewTexture_ = {}; preview_ = {}; }
+void StyleAIView::Shutdown() { backend_.Stop(); generationBackend_.Stop(); previewTexture_ = {}; generatedTexture_ = {}; preview_ = {}; generatedImage_ = {}; }
