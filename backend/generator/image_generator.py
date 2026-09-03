@@ -25,7 +25,11 @@ def generate_image(config: dict, log) -> tuple[Path, int]:
     if not 0.0 <= strength <= 2.0: raise ValueError("LoRA strength must be between 0 and 2.")
     seed = int(config.get("seed", -1)); seed = random.SystemRandom().randrange(0, 2**63 - 1) if seed < 0 else seed
     log(f"Seed: {seed}"); log("Loading base model...")
-    pipe = StableDiffusionPipeline.from_pretrained(str(config["base_model"]), dtype=torch.float16)
+    enable_safety_checker = bool(config.get("enable_safety_checker", False))
+    pipeline_options = {"dtype": torch.float16}
+    if not enable_safety_checker:
+        pipeline_options.update({"safety_checker": None, "requires_safety_checker": False})
+    pipe = StableDiffusionPipeline.from_pretrained(str(config["base_model"]), **pipeline_options)
     pipe.to("cuda"); pipe.enable_attention_slicing(); pipe.set_progress_bar_config(disable=True)
     log("Loading LoRA...")
     pipe.load_lora_weights(lora.parent, weight_name=lora.name, adapter_name="layerforge")
@@ -45,7 +49,8 @@ def generate_image(config: dict, log) -> tuple[Path, int]:
     stem = f"{datetime.now():%Y%m%d_%H%M%S_%f}_{seed}"
     temporary = output_root / f".{stem}.incomplete.png"; output = output_root / f"{stem}.png"
     metadata_values = {"prompt": prompt, "negative_prompt": str(config.get("negative_prompt", "")), "seed": seed,
-        "base_model": str(config["base_model"]), "lora": str(lora), "lora_strength": strength, "steps": steps, "guidance_scale": guidance}
+        "base_model": str(config["base_model"]), "lora": str(lora), "lora_strength": strength, "steps": steps,
+        "guidance_scale": guidance, "enable_safety_checker": enable_safety_checker}
     metadata = PngInfo()
     for key, value in metadata_values.items(): metadata.add_text(key, str(value))
     image.save(temporary, pnginfo=metadata); temporary.replace(output)

@@ -371,6 +371,7 @@ Models/**/*.pt
 Models/**/*.pth
 Models/**/*.bin
 Models/**/*.safetensors
+Styles/**/*.safetensors
 
 # Local Style AI environments, generated configs, datasets, and trained adapters
 runtime/python/

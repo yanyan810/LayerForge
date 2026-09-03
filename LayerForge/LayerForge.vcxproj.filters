@@ -38,6 +38,7 @@
     <ClInclude Include="StyleAI\StyleTrainingConfig.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="StyleAI\StyleGenerationConfig.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="StyleAI\StyleCaptionConfig.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StyleAI\StylePreset.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AI\AIModelManager.cpp"><Filter>ソース ファイル</Filter></ClCompile>
@@ -59,5 +60,6 @@
     <ClCompile Include="StyleAI\StyleTrainingConfig.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="StyleAI\StyleGenerationConfig.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="StyleAI\StyleCaptionConfig.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StyleAI\StylePreset.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
 </Project>

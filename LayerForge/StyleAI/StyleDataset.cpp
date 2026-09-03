@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cwctype>
+#include <chrono>
 
 namespace {
 std::string Utf8(const std::filesystem::path& path) {
@@ -195,4 +196,25 @@ bool StyleDataset::ContainsSource(const std::filesystem::path& source) const {
 bool StyleDataset::ReloadCaptions(std::string& error) {
     for(auto& item:items_) if(!ReadText(item.captionPath,item.caption)){error="Could not reload caption: "+Utf8(item.captionPath);return false;}
     error.clear(); return true;
+}
+
+bool StyleDataset::SaveAs(const std::filesystem::path& path, const std::string& name, std::string& error) {
+    if(!IsOpen()){error="No dataset is open.";return false;}
+    if(path.empty()||name.empty()){error="Dataset name and path are required.";return false;}
+    const auto destination=std::filesystem::absolute(path).lexically_normal();std::error_code ec;
+    if(std::filesystem::exists(destination,ec)){error="Dataset already exists.";return false;}
+    const auto temporary=destination.parent_path()/(destination.filename().wstring()+L".incomplete-"+std::to_wstring(std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::filesystem::create_directories(temporary/"images",ec);if(!ec)std::filesystem::create_directories(temporary/"captions",ec);
+    if(ec){error="Could not create the new dataset: "+ec.message();return false;}
+    const auto cleanup=[&]{std::error_code ignored;std::filesystem::remove_all(temporary,ignored);};
+    StyleDataset clone;clone.datasetPath_=temporary;clone.datasetName_=name;clone.nextImageId_=nextImageId_;
+    for(const auto& item:items_){
+        StyleDatasetItem copied=item;copied.localImagePath=temporary/"images"/item.localImagePath.filename();copied.captionPath=temporary/"captions"/item.captionPath.filename();
+        std::filesystem::copy_file(item.localImagePath,copied.localImagePath,std::filesystem::copy_options::none,ec);if(ec){error="Could not copy dataset image: "+ec.message();cleanup();return false;}
+        if(!WriteText(copied.captionPath,item.caption,error)){cleanup();return false;}clone.items_.push_back(std::move(copied));
+    }
+    if(!clone.Save(error)){cleanup();return false;}
+    std::filesystem::create_directories(destination.parent_path(),ec);if(ec){error="Could not create the dataset parent folder: "+ec.message();cleanup();return false;}
+    std::filesystem::rename(temporary,destination,ec);if(ec){error="Could not save the new dataset: "+ec.message();cleanup();return false;}
+    return Load(destination,error);
 }

@@ -1,0 +1,10 @@
+{
+  "base_model": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "dataset": "C:/Users/yanya/Desktop/LayerForge/LayerForge/datasets/MyStyle",
+  "epochs": 10,
+  "resolution": 512,
+  "learning_rate": 0.0001,
+  "rank": 16,
+  "trigger_word": "lfstyle",
+  "images": 19
+}

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "name": "SosoStyle",
+  "lora_path": "SosoStyle.safetensors",
+  "base_model": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "trigger_word": "lfstyle",
+  "default_strength": 1,
+  "resolution": 512
+}

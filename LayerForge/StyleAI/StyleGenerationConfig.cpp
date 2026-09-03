@@ -11,6 +11,8 @@ bool SaveGenerationConfig(const StyleGenerationConfig& c,const std::filesystem::
     s<<"{\n  \"version\": 1,\n  \"base_model\": \""<<Escape(c.baseModel)<<"\",\n  \"lora_path\": \""<<Escape(Utf8(c.loraPath))
      <<"\",\n  \"trigger_word\": \""<<Escape(c.triggerWord)<<"\",\n  \"prompt\": \""<<Escape(c.prompt)<<"\",\n  \"negative_prompt\": \""<<Escape(c.negativePrompt)
      <<"\",\n  \"lora_strength\": "<<c.loraStrength<<",\n  \"width\": "<<c.width<<",\n  \"height\": "<<c.height<<",\n  \"steps\": "<<c.steps
-     <<",\n  \"guidance_scale\": "<<c.guidanceScale<<",\n  \"seed\": "<<c.seed<<",\n  \"output_dir\": \""<<Escape(Utf8(c.outputDirectory))<<"\"\n}\n";
+     <<",\n  \"guidance_scale\": "<<c.guidanceScale<<",\n  \"seed\": "<<c.seed
+     <<",\n  \"enable_safety_checker\": "<<(c.enableSafetyChecker?"true":"false")
+     <<",\n  \"output_dir\": \""<<Escape(Utf8(c.outputDirectory))<<"\"\n}\n";
     if(!s){error="Could not finish generation_config.json.";return false;} return true;
 }
