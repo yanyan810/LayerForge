@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "dataset": "C:/Users/yanya/Desktop/LayerForge/LayerForge/datasets/MyStyle",
+  "output_name": "MyStyle",
+  "epochs": 10,
+  "resolution": 1024,
+  "learning_rate": 0.000100
+}
