@@ -61,6 +61,546 @@
       "image": "images/000012.jpg",
       "caption": "captions/000012.txt",
       "enabled": true
+    },
+    {
+      "image": "images/000013.jpg",
+      "caption": "captions/000013.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P0.jpg"
+    },
+    {
+      "image": "images/000014.jpg",
+      "caption": "captions/000014.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P1.jpg"
+    },
+    {
+      "image": "images/000015.jpg",
+      "caption": "captions/000015.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P10.jpg"
+    },
+    {
+      "image": "images/000016.jpg",
+      "caption": "captions/000016.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P2.jpg"
+    },
+    {
+      "image": "images/000017.jpg",
+      "caption": "captions/000017.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P3.jpg"
+    },
+    {
+      "image": "images/000018.jpg",
+      "caption": "captions/000018.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P4.jpg"
+    },
+    {
+      "image": "images/000019.jpg",
+      "caption": "captions/000019.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P5.jpg"
+    },
+    {
+      "image": "images/000020.jpg",
+      "caption": "captions/000020.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P6.jpg"
+    },
+    {
+      "image": "images/000021.jpg",
+      "caption": "captions/000021.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P7.jpg"
+    },
+    {
+      "image": "images/000022.jpg",
+      "caption": "captions/000022.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P8.jpg"
+    },
+    {
+      "image": "images/000023.jpg",
+      "caption": "captions/000023.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Yunjin/P9.jpg"
+    },
+    {
+      "image": "images/000024.jpg",
+      "caption": "captions/000024.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P0.jpg"
+    },
+    {
+      "image": "images/000025.jpg",
+      "caption": "captions/000025.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P1.jpg"
+    },
+    {
+      "image": "images/000026.jpg",
+      "caption": "captions/000026.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P10.jpg"
+    },
+    {
+      "image": "images/000027.jpg",
+      "caption": "captions/000027.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P2.jpg"
+    },
+    {
+      "image": "images/000028.jpg",
+      "caption": "captions/000028.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P3.jpg"
+    },
+    {
+      "image": "images/000029.jpg",
+      "caption": "captions/000029.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P4.jpg"
+    },
+    {
+      "image": "images/000030.jpg",
+      "caption": "captions/000030.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P5.jpg"
+    },
+    {
+      "image": "images/000031.jpg",
+      "caption": "captions/000031.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P6.jpg"
+    },
+    {
+      "image": "images/000032.jpg",
+      "caption": "captions/000032.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P7.jpg"
+    },
+    {
+      "image": "images/000033.jpg",
+      "caption": "captions/000033.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P8.jpg"
+    },
+    {
+      "image": "images/000034.jpg",
+      "caption": "captions/000034.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Sara/P9.jpg"
+    },
+    {
+      "image": "images/000035.jpg",
+      "caption": "captions/000035.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P0.jpg"
+    },
+    {
+      "image": "images/000036.jpg",
+      "caption": "captions/000036.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P1.jpg"
+    },
+    {
+      "image": "images/000037.jpg",
+      "caption": "captions/000037.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P10.jpg"
+    },
+    {
+      "image": "images/000038.jpg",
+      "caption": "captions/000038.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P2.jpg"
+    },
+    {
+      "image": "images/000039.jpg",
+      "caption": "captions/000039.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P3.jpg"
+    },
+    {
+      "image": "images/000040.jpg",
+      "caption": "captions/000040.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P4.jpg"
+    },
+    {
+      "image": "images/000041.jpg",
+      "caption": "captions/000041.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P5.jpg"
+    },
+    {
+      "image": "images/000042.jpg",
+      "caption": "captions/000042.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P6.jpg"
+    },
+    {
+      "image": "images/000043.jpg",
+      "caption": "captions/000043.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P7.jpg"
+    },
+    {
+      "image": "images/000044.jpg",
+      "caption": "captions/000044.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P8.jpg"
+    },
+    {
+      "image": "images/000045.jpg",
+      "caption": "captions/000045.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Mutsuki/P9.jpg"
+    },
+    {
+      "image": "images/000046.jpg",
+      "caption": "captions/000046.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P0.jpg"
+    },
+    {
+      "image": "images/000047.jpg",
+      "caption": "captions/000047.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P1.jpg"
+    },
+    {
+      "image": "images/000048.jpg",
+      "caption": "captions/000048.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P10.jpg"
+    },
+    {
+      "image": "images/000049.jpg",
+      "caption": "captions/000049.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P2.jpg"
+    },
+    {
+      "image": "images/000050.jpg",
+      "caption": "captions/000050.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P3.jpg"
+    },
+    {
+      "image": "images/000051.jpg",
+      "caption": "captions/000051.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P4.jpg"
+    },
+    {
+      "image": "images/000052.jpg",
+      "caption": "captions/000052.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P5.jpg"
+    },
+    {
+      "image": "images/000053.jpg",
+      "caption": "captions/000053.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P6.jpg"
+    },
+    {
+      "image": "images/000054.jpg",
+      "caption": "captions/000054.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P7.jpg"
+    },
+    {
+      "image": "images/000055.jpg",
+      "caption": "captions/000055.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P8.jpg"
+    },
+    {
+      "image": "images/000056.jpg",
+      "caption": "captions/000056.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Kanata/P9.jpg"
+    },
+    {
+      "image": "images/000057.jpg",
+      "caption": "captions/000057.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P0.jpg"
+    },
+    {
+      "image": "images/000058.jpg",
+      "caption": "captions/000058.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P1.jpg"
+    },
+    {
+      "image": "images/000059.jpg",
+      "caption": "captions/000059.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P10.jpg"
+    },
+    {
+      "image": "images/000060.jpg",
+      "caption": "captions/000060.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P2.jpg"
+    },
+    {
+      "image": "images/000061.jpg",
+      "caption": "captions/000061.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P3.jpg"
+    },
+    {
+      "image": "images/000062.jpg",
+      "caption": "captions/000062.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P4.jpg"
+    },
+    {
+      "image": "images/000063.jpg",
+      "caption": "captions/000063.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P5.jpg"
+    },
+    {
+      "image": "images/000064.jpg",
+      "caption": "captions/000064.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P6.jpg"
+    },
+    {
+      "image": "images/000065.jpg",
+      "caption": "captions/000065.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P7.jpg"
+    },
+    {
+      "image": "images/000066.jpg",
+      "caption": "captions/000066.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P8.jpg"
+    },
+    {
+      "image": "images/000067.jpg",
+      "caption": "captions/000067.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Barbara/P9.jpg"
+    },
+    {
+      "image": "images/000068.jpg",
+      "caption": "captions/000068.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P0.jpg"
+    },
+    {
+      "image": "images/000069.jpg",
+      "caption": "captions/000069.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P1.jpg"
+    },
+    {
+      "image": "images/000070.jpg",
+      "caption": "captions/000070.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P10.jpg"
+    },
+    {
+      "image": "images/000071.jpg",
+      "caption": "captions/000071.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P2.jpg"
+    },
+    {
+      "image": "images/000072.jpg",
+      "caption": "captions/000072.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P3.jpg"
+    },
+    {
+      "image": "images/000073.jpg",
+      "caption": "captions/000073.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P4.5.jpg"
+    },
+    {
+      "image": "images/000074.jpg",
+      "caption": "captions/000074.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P4.jpg"
+    },
+    {
+      "image": "images/000075.jpg",
+      "caption": "captions/000075.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P5.jpg"
+    },
+    {
+      "image": "images/000076.jpg",
+      "caption": "captions/000076.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P6.jpg"
+    },
+    {
+      "image": "images/000077.jpg",
+      "caption": "captions/000077.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P7.jpg"
+    },
+    {
+      "image": "images/000078.jpg",
+      "caption": "captions/000078.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P8.jpg"
+    },
+    {
+      "image": "images/000079.jpg",
+      "caption": "captions/000079.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P9.5.jpg"
+    },
+    {
+      "image": "images/000080.jpg",
+      "caption": "captions/000080.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_12/Ako/P9.jpg"
+    },
+    {
+      "image": "images/000081.jpg",
+      "caption": "captions/000081.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P0.jpg"
+    },
+    {
+      "image": "images/000082.jpg",
+      "caption": "captions/000082.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P1.jpg"
+    },
+    {
+      "image": "images/000083.jpg",
+      "caption": "captions/000083.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P10.jpg"
+    },
+    {
+      "image": "images/000084.jpg",
+      "caption": "captions/000084.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P2.jpg"
+    },
+    {
+      "image": "images/000085.jpg",
+      "caption": "captions/000085.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P3.jpg"
+    },
+    {
+      "image": "images/000086.jpg",
+      "caption": "captions/000086.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P4.jpg"
+    },
+    {
+      "image": "images/000087.jpg",
+      "caption": "captions/000087.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P5.jpg"
+    },
+    {
+      "image": "images/000088.jpg",
+      "caption": "captions/000088.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P6.jpg"
+    },
+    {
+      "image": "images/000089.jpg",
+      "caption": "captions/000089.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P7.jpg"
+    },
+    {
+      "image": "images/000090.jpg",
+      "caption": "captions/000090.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P8.jpg"
+    },
+    {
+      "image": "images/000091.jpg",
+      "caption": "captions/000091.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Amnknt/P9.jpg"
+    },
+    {
+      "image": "images/000092.jpg",
+      "caption": "captions/000092.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P0.jpg"
+    },
+    {
+      "image": "images/000093.jpg",
+      "caption": "captions/000093.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P1.jpg"
+    },
+    {
+      "image": "images/000094.jpg",
+      "caption": "captions/000094.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P10.jpg"
+    },
+    {
+      "image": "images/000095.jpg",
+      "caption": "captions/000095.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P2.jpg"
+    },
+    {
+      "image": "images/000096.jpg",
+      "caption": "captions/000096.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P3.jpg"
+    },
+    {
+      "image": "images/000097.jpg",
+      "caption": "captions/000097.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P4.jpg"
+    },
+    {
+      "image": "images/000098.jpg",
+      "caption": "captions/000098.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P5.jpg"
+    },
+    {
+      "image": "images/000099.jpg",
+      "caption": "captions/000099.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P6.jpg"
+    },
+    {
+      "image": "images/000100.jpg",
+      "caption": "captions/000100.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P7.jpg"
+    },
+    {
+      "image": "images/000101.jpg",
+      "caption": "captions/000101.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P8.jpg"
+    },
+    {
+      "image": "images/000102.jpg",
+      "caption": "captions/000102.txt",
+      "enabled": true,
+      "source_file": "C:/Users/yanya/Desktop/LayerForge/resources/テスト/繝・せ繝・panbox_2021_07/Ayaka1/P9.jpg"
     }
   ]
 }

@@ -4,6 +4,7 @@
 #include "StyleAIBackend.h"
 #include "StyleTrainingConfig.h"
 #include "StyleGenerationConfig.h"
+#include "StyleCaptionConfig.h"
 #include "../GraphicsDevice.h"
 #include "../ImageData.h"
 #include "../ImageLoader.h"
@@ -28,6 +29,9 @@ private:
     void StartGeneration();
     void SelectLora(HWND owner);
     void UpdateGeneratedPreview(GraphicsDevice& graphics, const ImageLoader& loader);
+    void ImportFolders(HWND owner);
+    void StartCaption(bool selectedOnly);
+    void UpdateCaptionResult();
 
     StyleDataset dataset_;
     ImageData preview_;
@@ -51,6 +55,13 @@ private:
     int seed_ = 42;
     StyleAIBackend backend_;
     StyleAIBackend generationBackend_;
+    StyleAIBackend captionBackend_;
+    bool includeSubfolders_=false,skipImported_=true;
+    std::array<char,1024> captionModel_{"SmilingWolf/wd-eva02-large-tagger-v3"};
+    float generalThreshold_=.35f,characterThreshold_=.85f;
+    bool includeCharacterTags_=false,includeRatingTags_=false,replaceUnderscores_=true,skipNonEmptyCaptions_=true;
+    std::string captionStatus_;
+    bool captionReloaded_=true;
     ImageData generatedImage_;
     GraphicsDevice::Texture generatedTexture_;
     std::array<char, 1024> generationBaseModel_{ "stable-diffusion-v1-5/stable-diffusion-v1-5" };

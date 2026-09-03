@@ -166,6 +166,7 @@
     <ClInclude Include="StyleAI\StyleAIBackend.h" />
     <ClInclude Include="StyleAI\StyleTrainingConfig.h" />
     <ClInclude Include="StyleAI\StyleGenerationConfig.h" />
+    <ClInclude Include="StyleAI\StyleCaptionConfig.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
@@ -194,6 +195,7 @@
     <ClCompile Include="StyleAI\StyleAIBackend.cpp" />
     <ClCompile Include="StyleAI\StyleTrainingConfig.cpp" />
     <ClCompile Include="StyleAI\StyleGenerationConfig.cpp" />
+    <ClCompile Include="StyleAI\StyleCaptionConfig.cpp" />
     <ClCompile Include="WinMain.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />

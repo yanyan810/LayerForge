@@ -27,8 +27,8 @@ bool ImageLoader::Load(const std::filesystem::path& path, ImageData& output, std
 
     std::wstring extension = path.extension().wstring();
     std::ranges::transform(extension, extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
-    if (extension != L".png" && extension != L".jpg" && extension != L".jpeg") {
-        error = "PNG or JPEG files are supported in Phase 1.";
+    if (extension != L".png" && extension != L".jpg" && extension != L".jpeg" && extension != L".webp") {
+        error = "PNG, JPEG, or WebP files are supported.";
         return false;
     }
 

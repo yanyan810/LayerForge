@@ -77,7 +77,7 @@ bool FindString(const std::string& json, const std::string& key, size_t start, s
 bool Supported(const std::filesystem::path& path) {
     std::wstring extension = path.extension().wstring();
     std::ranges::transform(extension, extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
-    return extension == L".png" || extension == L".jpg" || extension == L".jpeg";
+    return extension == L".png" || extension == L".jpg" || extension == L".jpeg" || extension == L".webp";
 }
 }
 
@@ -120,6 +120,9 @@ bool StyleDataset::Load(const std::filesystem::path& path, std::string& error) {
         StyleDatasetItem item;
         item.localImagePath = root / PathFromUtf8(image);
         item.captionPath = root / PathFromUtf8(captionPath);
+        std::string source;
+        if (FindString(json, "source_file", afterCaption, source) && (nextImage == std::string::npos || json.find("\"source_file\"", afterCaption) < nextImage))
+            item.sourcePath = PathFromUtf8(source);
         item.enabled = enabled;
         ReadText(item.captionPath, item.caption);
         loaded.push_back(std::move(item));
@@ -138,7 +141,9 @@ bool StyleDataset::Save(std::string& error) const {
         const auto& item = items_[i];
         json << (i ? "," : "") << "\n    {\n      \"image\": \"" << EscapeJson(Utf8(std::filesystem::relative(item.localImagePath, datasetPath_)))
              << "\",\n      \"caption\": \"" << EscapeJson(Utf8(std::filesystem::relative(item.captionPath, datasetPath_)))
-             << "\",\n      \"enabled\": " << (item.enabled ? "true" : "false") << "\n    }";
+             << "\",\n      \"enabled\": " << (item.enabled ? "true" : "false");
+        if (!item.sourcePath.empty()) json << ",\n      \"source_file\": \"" << EscapeJson(Utf8(item.sourcePath)) << "\"";
+        json << "\n    }";
     }
     json << "\n  ]\n}\n";
     return WriteText(datasetPath_ / "dataset.json", json.str(), error);
@@ -179,4 +184,15 @@ bool StyleDataset::RemoveImage(size_t index, std::string& error) {
 bool StyleDataset::Clear(std::string& error) {
     while (!items_.empty()) if (!RemoveImage(items_.size() - 1, error)) return false;
     return true;
+}
+
+bool StyleDataset::ContainsSource(const std::filesystem::path& source) const {
+    std::error_code ec; const auto normalized=std::filesystem::weakly_canonical(source,ec);
+    for(const auto& item:items_){if(item.sourcePath.empty())continue; std::error_code other; if(std::filesystem::weakly_canonical(item.sourcePath,other)==normalized)return true;}
+    return false;
+}
+
+bool StyleDataset::ReloadCaptions(std::string& error) {
+    for(auto& item:items_) if(!ReadText(item.captionPath,item.caption)){error="Could not reload caption: "+Utf8(item.captionPath);return false;}
+    error.clear(); return true;
 }

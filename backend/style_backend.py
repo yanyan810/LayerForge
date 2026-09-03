@@ -14,7 +14,7 @@ def fail(message: str) -> int:
 def load_config(path: Path, mode: str) -> dict:
     with path.open("r", encoding="utf-8") as stream:
         config = json.load(stream)
-    required = ("dataset", "output_name", "output_dir", "base_model") if mode == "train" else ("base_model", "lora_path", "prompt", "output_dir")
+    required = ("dataset", "output_name", "output_dir", "base_model") if mode == "train" else (("dataset",) if mode == "caption" else ("base_model", "lora_path", "prompt", "output_dir"))
     for key in required:
         if not str(config.get(key, "")).strip():
             raise ValueError(f"Training config field '{key}' is required.")
@@ -23,13 +23,17 @@ def load_config(path: Path, mode: str) -> dict:
 def main() -> int:
     if len(sys.argv) == 2:
         mode, config_argument = "train", sys.argv[1]
-    elif len(sys.argv) == 3 and sys.argv[1] in {"train", "generate"}:
+    elif len(sys.argv) == 3 and sys.argv[1] in {"train", "generate", "caption"}:
         mode, config_argument = sys.argv[1], sys.argv[2]
     else:
-        return fail("Usage: style_backend.py <train|generate> <config.json>")
+        return fail("Usage: style_backend.py <train|generate|caption> <config.json>")
     try:
         config = load_config(Path(config_argument), mode)
         out("Backend started")
+        if mode == "caption":
+            from captioner.auto_tagger import caption_dataset
+            out("Auto Caption started"); out(f"Model: {config.get('model', 'SmilingWolf/wd-eva02-large-tagger-v3')}")
+            caption_dataset(config,out); out("Complete"); return 0
         if mode == "generate":
             try:
                 import torch

@@ -21,6 +21,8 @@ public:
     bool RemoveImage(size_t index, std::string& error);
     bool SaveCaption(size_t index, const std::string& caption, std::string& error);
     bool Clear(std::string& error);
+    [[nodiscard]] bool ContainsSource(const std::filesystem::path& source) const;
+    bool ReloadCaptions(std::string& error);
 
     [[nodiscard]] const std::vector<StyleDatasetItem>& GetItems() const { return items_; }
     [[nodiscard]] const std::filesystem::path& GetPath() const { return datasetPath_; }
