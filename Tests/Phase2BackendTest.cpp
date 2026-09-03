@@ -9,7 +9,7 @@
 int wmain(int argc, wchar_t** argv) {
     if (argc == 4) {
         StyleAIBackend backend; std::string error;
-        if (!backend.Start(argv[1], std::filesystem::absolute(argv[2]), std::filesystem::absolute(argv[3]), error)) { std::cerr << error << '\n'; return 1; }
+        if (!backend.Start(argv[1], std::filesystem::absolute(argv[2]), L"generate", std::filesystem::absolute(argv[3]), error)) { std::cerr << error << '\n'; return 1; }
         std::this_thread::sleep_for(std::chrono::seconds(5)); backend.Stop();
         if (backend.IsRunning() || backend.GetStatus() != StyleBackendStatus::Stopped) { std::cerr << "real Backend stop test failed\n"; return 1; }
         std::cout << "Real Backend stop test passed.\n"; return 0;

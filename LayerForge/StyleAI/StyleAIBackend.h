@@ -24,6 +24,8 @@ public:
 
     bool Start(const std::filesystem::path& pythonExe, const std::filesystem::path& script,
         const std::filesystem::path& configPath, std::string& error);
+    bool Start(const std::filesystem::path& pythonExe, const std::filesystem::path& script,
+        const std::wstring& mode, const std::filesystem::path& configPath, std::string& error);
     void Update();
     void Stop();
 

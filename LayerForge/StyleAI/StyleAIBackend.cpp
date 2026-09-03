@@ -22,6 +22,11 @@ StyleAIBackend::~StyleAIBackend() { Stop(); }
 
 bool StyleAIBackend::Start(const std::filesystem::path& pythonExe, const std::filesystem::path& script,
     const std::filesystem::path& configPath, std::string& error) {
+    return Start(pythonExe, script, {}, configPath, error);
+}
+
+bool StyleAIBackend::Start(const std::filesystem::path& pythonExe, const std::filesystem::path& script,
+    const std::wstring& mode, const std::filesystem::path& configPath, std::string& error) {
     error.clear();
     if (IsRunning()) { error = "Backend is already running."; return false; }
     if (worker_.joinable()) worker_.join();
@@ -40,7 +45,9 @@ bool StyleAIBackend::Start(const std::filesystem::path& pythonExe, const std::fi
     startup.dwFlags = STARTF_USESTDHANDLES;
     startup.hStdOutput = stdoutWrite; startup.hStdError = stderrWrite; startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
     PROCESS_INFORMATION process{};
-    std::wstring command = Quote(pythonExe) + L" -u " + Quote(script) + L" " + Quote(configPath);
+    std::wstring command = Quote(pythonExe) + L" -u " + Quote(script);
+    if (!mode.empty()) command += L" " + mode;
+    command += L" " + Quote(configPath);
     std::vector<wchar_t> mutableCommand(command.begin(), command.end()); mutableCommand.push_back(L'\0');
     const std::filesystem::path workingDirectory = script.parent_path();
     const BOOL created = CreateProcessW(nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
