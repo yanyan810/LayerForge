@@ -1,8 +1,17 @@
 {
-  "version": 1,
+  "version": 2,
   "dataset": "C:/Users/yanya/Desktop/LayerForge/LayerForge/datasets/MyStyle",
   "output_name": "MyStyle",
+  "output_dir": "C:/Users/yanya/Desktop/LayerForge/models/lora",
+  "base_model": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "trigger_word": "lfstyle",
   "epochs": 10,
-  "resolution": 1024,
-  "learning_rate": 0.000100
+  "resolution": 512,
+  "train_batch_size": 1,
+  "gradient_accumulation_steps": 1,
+  "learning_rate": 0.000100,
+  "rank": 16,
+  "mixed_precision": "fp16",
+  "gradient_checkpointing": true,
+  "seed": 42
 }

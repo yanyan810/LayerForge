@@ -372,6 +372,12 @@ Models/**/*.pth
 Models/**/*.bin
 Models/**/*.safetensors
 
+# Local Style AI environments, generated configs, datasets, and trained adapters
+runtime/python/
+runtime/training_config.json
+models/lora/
+datasets/Phase3Test/
+
 # Local Phase 4 model-export workspaces
 .phase4c-eval/
 .phase4e-*/
