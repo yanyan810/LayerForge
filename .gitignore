@@ -376,6 +376,7 @@ Models/**/*.safetensors
 runtime/python/
 runtime/training_config.json
 runtime/generation_config.json
+runtime/caption_config.json
 Outputs/Generated/
 models/lora/
 datasets/Phase3Test/

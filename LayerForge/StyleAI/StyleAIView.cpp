@@ -9,6 +9,7 @@
 #include <vector>
 #include <cmath>
 #include <fstream>
+#include <cwctype>
 
 using Microsoft::WRL::ComPtr;
 
@@ -52,6 +53,14 @@ std::filesystem::path PickLoraFile(HWND owner) {
     ComPtr<IShellItem> item; PWSTR value = nullptr;
     if (FAILED(dialog->GetResult(&item)) || FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &value))) return {};
     std::filesystem::path result(value); CoTaskMemFree(value); return result;
+}
+
+std::vector<std::filesystem::path> PickFolders(HWND owner) {
+    ComPtr<IFileOpenDialog> dialog; if(FAILED(CoCreateInstance(CLSID_FileOpenDialog,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&dialog))))return{};
+    dialog->SetOptions(FOS_FORCEFILESYSTEM|FOS_PICKFOLDERS|FOS_PATHMUSTEXIST|FOS_ALLOWMULTISELECT|FOS_NOCHANGEDIR); if(FAILED(dialog->Show(owner)))return{};
+    ComPtr<IShellItemArray> results; if(FAILED(dialog->GetResults(&results)))return{}; DWORD count=0;results->GetCount(&count);std::vector<std::filesystem::path> folders;
+    for(DWORD i=0;i<count;++i){ComPtr<IShellItem> item;PWSTR value=nullptr;if(SUCCEEDED(results->GetItemAt(i,&item))&&SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH,&value))){folders.emplace_back(value);CoTaskMemFree(value);}}
+    return folders;
 }
 
 bool JsonString(const std::filesystem::path& path, const char* key, std::string& value) {
@@ -150,6 +159,22 @@ void StyleAIView::RemoveSelected() {
         selected_ = -1; preview_ = {}; previewTexture_ = {}; caption_.fill(0); message_ = "Image removed."; messageIsError_ = false;
     } else messageIsError_ = true;
 }
+
+void StyleAIView::ImportFolders(HWND owner) {
+    if(!dataset_.IsOpen()){message_="Create or load a dataset first.";messageIsError_=true;return;} const auto folders=PickFolders(owner);if(folders.empty())return;
+    std::vector<std::filesystem::path> images;std::error_code ec;
+    for(const auto& folder:folders){if(includeSubfolders_){for(const auto& entry:std::filesystem::recursive_directory_iterator(folder,std::filesystem::directory_options::skip_permission_denied,ec))if(entry.is_regular_file()){auto x=entry.path().extension().wstring();std::ranges::transform(x,x.begin(),::towlower);if(x==L".png"||x==L".jpg"||x==L".jpeg"||x==L".webp")images.push_back(entry.path());}}else{for(const auto& entry:std::filesystem::directory_iterator(folder,ec))if(entry.is_regular_file()){auto x=entry.path().extension().wstring();std::ranges::transform(x,x.begin(),::towlower);if(x==L".png"||x==L".jpg"||x==L".jpeg"||x==L".webp")images.push_back(entry.path());}}}
+    std::ranges::sort(images);size_t imported=0,skipped=0;for(const auto& image:images){if(skipImported_&&dataset_.ContainsSource(image)){++skipped;continue;}if(!dataset_.AddImage(image,message_)){messageIsError_=true;return;}++imported;}
+    message_="Found "+std::to_string(images.size())+" images. Imported "+std::to_string(imported)+", skipped "+std::to_string(skipped)+".";messageIsError_=false;
+}
+
+void StyleAIView::StartCaption(bool selectedOnly) {
+    captionStatus_.clear();if(!dataset_.IsOpen()){captionStatus_="No dataset selected.";return;}if(selectedOnly&&selected_<0){captionStatus_="No image selected.";return;}
+    const auto script=ResolveExisting(PathFromUtf8(backendScript_.data()));StyleCaptionConfig config;config.datasetPath=dataset_.GetPath();config.mode=selectedOnly?"selected":"all";config.model=captionModel_.data();config.generalThreshold=generalThreshold_;config.characterThreshold=characterThreshold_;config.includeCharacterTags=includeCharacterTags_;config.includeRatingTags=includeRatingTags_;config.replaceUnderscores=replaceUnderscores_;config.overwriteExisting=!skipNonEmptyCaptions_;if(selectedOnly)config.items.push_back(dataset_.GetItems()[selected_].localImagePath.stem().string());
+    const auto path=script.parent_path().parent_path()/"runtime"/"caption_config.json";if(!SaveCaptionConfig(config,path,captionStatus_))return;auto python=PathFromUtf8(pythonPath_.data());if(python.has_parent_path())python=ResolveExisting(python);if(!captionBackend_.Start(python,script,L"caption",path,captionStatus_))return;captionReloaded_=false;captionStatus_="Auto Caption started.";
+}
+
+void StyleAIView::UpdateCaptionResult(){if(captionBackend_.IsRunning()||captionReloaded_)return;if(captionBackend_.GetStatus()==StyleBackendStatus::Completed){if(dataset_.ReloadCaptions(captionStatus_)){if(selected_>=0)CopyBuffer(caption_,dataset_.GetItems()[selected_].caption);captionStatus_="Auto Caption completed.";}}captionReloaded_=true;}
 
 void StyleAIView::StartBackend() {
     trainingMessage_.clear();
@@ -295,6 +320,7 @@ void StyleAIView::DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const Im
 }
 
 void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& loader) {
+    UpdateCaptionResult();
     ImGui::SetNextWindowSize(ImVec2(720, 650), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Style AI")) { ImGui::End(); return; }
     if (ImGui::BeginTabBar("StyleAITabs")) {
@@ -305,10 +331,21 @@ void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& 
             if (ImGui::Button("Load Dataset...")) LoadDataset(owner);
             ImGui::BeginDisabled(!dataset_.IsOpen());
             if (ImGui::Button("Add Images...")) AddImages(owner, graphics, loader); ImGui::SameLine();
+            if (ImGui::Button("Add Folder...")) ImportFolders(owner); ImGui::SameLine();
+            if (ImGui::Button("Add Folders...")) ImportFolders(owner);
+            ImGui::Checkbox("Include Subfolders",&includeSubfolders_);ImGui::SameLine();ImGui::Checkbox("Skip already imported files",&skipImported_);
             ImGui::BeginDisabled(selected_ < 0); if (ImGui::Button("Remove Selected")) RemoveSelected(); ImGui::EndDisabled(); ImGui::SameLine();
             if (ImGui::Button("Clear")) { if (dataset_.Clear(message_)) { selected_ = -1; preview_ = {}; previewTexture_ = {}; caption_.fill(0); message_ = "Dataset cleared."; messageIsError_ = false; } else messageIsError_ = true; }
             ImGui::EndDisabled();
             if (!message_.empty()) ImGui::TextColored(messageIsError_ ? ImVec4(1, .35f, .35f, 1) : ImVec4(.35f, .85f, .45f, 1), "%s", message_.c_str());
+            ImGui::SetNextItemWidth(-1);ImGui::InputText("Tagger Model",captionModel_.data(),captionModel_.size());
+            ImGui::SliderFloat("General Threshold",&generalThreshold_,.1f,.9f,"%.2f");ImGui::SliderFloat("Character Threshold",&characterThreshold_,.1f,.9f,"%.2f");
+            ImGui::Checkbox("Character Tags",&includeCharacterTags_);ImGui::SameLine();ImGui::Checkbox("Rating Tags",&includeRatingTags_);ImGui::SameLine();ImGui::Checkbox("Replace Underscores",&replaceUnderscores_);
+            ImGui::Checkbox("Skip non-empty Captions",&skipNonEmptyCaptions_);
+            ImGui::BeginDisabled(captionBackend_.IsRunning()||selected_<0);if(ImGui::Button("Auto Caption Selected"))StartCaption(true);ImGui::EndDisabled();ImGui::SameLine();
+            ImGui::BeginDisabled(captionBackend_.IsRunning()||dataset_.GetItems().empty());if(ImGui::Button("Auto Caption All"))StartCaption(false);ImGui::EndDisabled();ImGui::SameLine();
+            ImGui::BeginDisabled(!captionBackend_.IsRunning());if(ImGui::Button("Stop##Caption")){captionBackend_.Stop();captionStatus_="Auto Caption stopped.";}ImGui::EndDisabled();
+            ImGui::Text("Caption Status: %s",StatusName(captionBackend_.GetStatus()));ImGui::ProgressBar(captionBackend_.GetProgress(),ImVec2(-1,0));if(!captionStatus_.empty())ImGui::TextWrapped("%s",captionStatus_.c_str());
             ImGui::Separator();
             const float listWidth = 220.0f;
             ImGui::BeginChild("StyleImageList", ImVec2(listWidth, 0), ImGuiChildFlags_Borders);
@@ -341,4 +378,4 @@ void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& 
     ImGui::End();
 }
 
-void StyleAIView::Shutdown() { backend_.Stop(); generationBackend_.Stop(); previewTexture_ = {}; generatedTexture_ = {}; preview_ = {}; generatedImage_ = {}; }
+void StyleAIView::Shutdown() { backend_.Stop(); generationBackend_.Stop(); captionBackend_.Stop(); previewTexture_ = {}; generatedTexture_ = {}; preview_ = {}; generatedImage_ = {}; }
