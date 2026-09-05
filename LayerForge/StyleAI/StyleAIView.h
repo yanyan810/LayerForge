@@ -5,6 +5,7 @@
 #include "StyleTrainingConfig.h"
 #include "StyleGenerationConfig.h"
 #include "StyleCaptionConfig.h"
+#include "StylePreset.h"
 #include "../GraphicsDevice.h"
 #include "../ImageData.h"
 #include "../ImageLoader.h"
@@ -32,6 +33,10 @@ private:
     void ImportFolders(HWND owner);
     void StartCaption(bool selectedOnly);
     void UpdateCaptionResult();
+    void SaveDatasetAs();
+    void SaveAsStyle();
+    void RefreshStyles();
+    void ApplyStyle(int index);
 
     StyleDataset dataset_;
     ImageData preview_;
@@ -79,4 +84,9 @@ private:
     std::string message_;
     bool messageIsError_ = false;
     std::string trainingMessage_;
+    std::array<char, 256> styleName_{ "MyStyle" };
+    std::vector<StylePreset> styles_;
+    int selectedStyle_ = -1;
+    bool stylesLoaded_ = false;
+    bool enableSafetyChecker_ = false;
 };

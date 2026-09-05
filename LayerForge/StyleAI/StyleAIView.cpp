@@ -202,6 +202,39 @@ void StyleAIView::StartBackend() {
     trainingMessage_ = "Backend started.";
 }
 
+void StyleAIView::SaveDatasetAs() {
+    if(dataset_.SaveAs(PathFromUtf8(path_.data()),name_.data(),message_)){
+        CopyBuffer(outputName_,dataset_.GetName());selected_=-1;preview_={};previewTexture_={};caption_.fill(0);
+        message_="Dataset saved as: "+dataset_.GetName();messageIsError_=false;
+    }else messageIsError_=true;
+}
+
+void StyleAIView::RefreshStyles() {
+    const auto script=ResolveExisting(PathFromUtf8(backendScript_.data()));
+    const auto root=script.parent_path().parent_path()/"Styles";
+    const std::string selectedName=selectedStyle_>=0&&selectedStyle_<static_cast<int>(styles_.size())?styles_[selectedStyle_].name:std::string{};
+    std::string warning;styles_=ScanStylePresets(root,warning);stylesLoaded_=true;selectedStyle_=-1;
+    for(size_t i=0;i<styles_.size();++i)if(styles_[i].name==selectedName){selectedStyle_=static_cast<int>(i);break;}
+    if(!warning.empty())generationMessage_=std::move(warning);
+}
+
+void StyleAIView::ApplyStyle(int index) {
+    if(index<0||index>=static_cast<int>(styles_.size()))return;
+    const auto& style=styles_[index];CopyBuffer(loraPath_,Utf8(style.loraPath));
+    CopyBuffer(generationBaseModel_,style.baseModel);CopyBuffer(generationTrigger_,style.triggerWord);
+    loraStrength_=style.defaultStrength;generationMessage_="Style selected: "+style.name;
+}
+
+void StyleAIView::SaveAsStyle() {
+    trainingMessage_.clear();const auto script=ResolveExisting(PathFromUtf8(backendScript_.data()));
+    const auto projectRoot=script.parent_path().parent_path();const auto outputFolder=projectRoot/"models"/"lora"/PathFromUtf8(outputName_.data());
+    const std::string loraName=std::string(outputName_.data())+".safetensors";const auto sourceLora=outputFolder/PathFromUtf8(loraName.c_str());
+    StylePreset preset;preset.name=styleName_.data();preset.baseModel=baseModel_.data();preset.triggerWord=triggerWord_.data();preset.defaultStrength=1.0f;preset.resolution=resolution_;
+    if(!RegisterStylePreset(preset,sourceLora,outputFolder/"training_info.json",projectRoot/"Styles",trainingMessage_))return;
+    trainingMessage_="Style saved: "+preset.name;RefreshStyles();
+    for(size_t i=0;i<styles_.size();++i)if(styles_[i].name==preset.name){selectedStyle_=static_cast<int>(i);break;}
+}
+
 void StyleAIView::DrawTrainingTab(HWND owner) {
     backend_.Update();
     constexpr float labelWidth = 165.0f;
@@ -243,6 +276,11 @@ void StyleAIView::DrawTrainingTab(HWND owner) {
     }
     const float progress = backend_.GetProgress();
     ImGui::ProgressBar(progress, ImVec2(-1, 0), (std::to_string(static_cast<int>(progress * 100.0f)) + "%").c_str());
+    ImGui::Separator();
+    beginField("Style Name"); ImGui::InputText("##StyleName", styleName_.data(), styleName_.size());
+    ImGui::BeginDisabled(backend_.IsRunning());
+    if (ImGui::Button("Save as Style", ImVec2(140, 0))) SaveAsStyle();
+    ImGui::EndDisabled();
     ImGui::TextUnformatted("Console");
     ImGui::BeginChild("BackendConsole", ImVec2(0, 230), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
     const auto logs = backend_.GetLogs();
@@ -257,6 +295,7 @@ void StyleAIView::DrawTrainingTab(HWND owner) {
 
 void StyleAIView::SelectLora(HWND owner) {
     const auto selected = PickLoraFile(owner); if (selected.empty()) return;
+    selectedStyle_ = -1;
     CopyBuffer(loraPath_, Utf8(selected));
     std::string value;
     if (JsonString(selected.parent_path() / "training_info.json", "base_model", value)) CopyBuffer(generationBaseModel_, value);
@@ -275,6 +314,7 @@ void StyleAIView::StartGeneration() {
     StyleGenerationConfig config; config.baseModel=generationBaseModel_.data(); config.loraPath=lora; config.prompt=prompt_.data();
     config.negativePrompt=negativePrompt_.data(); config.triggerWord=generationTrigger_.data(); config.loraStrength=loraStrength_;
     config.width=generationWidth_; config.height=generationHeight_; config.steps=generationSteps_; config.guidanceScale=guidanceScale_; config.seed=generationSeed_;
+    config.enableSafetyChecker=enableSafetyChecker_;
     config.outputDirectory=script.parent_path().parent_path()/"Outputs"/"Generated";
     const auto configPath=script.parent_path().parent_path()/"runtime"/"generation_config.json";
     if(!SaveGenerationConfig(config,configPath,generationMessage_)) return;
@@ -296,6 +336,14 @@ void StyleAIView::DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const Im
     generationBackend_.Update(); UpdateGeneratedPreview(graphics,loader);
     constexpr float label=145.0f;
     auto field=[](const char* text){ImGui::AlignTextToFramePadding();ImGui::TextUnformatted(text);ImGui::SameLine(label);ImGui::SetNextItemWidth(-1);};
+    field("Style");
+    const char* preview=selectedStyle_>=0&&selectedStyle_<static_cast<int>(styles_.size())?styles_[selectedStyle_].name.c_str():"(Manual LoRA)";
+    if(ImGui::BeginCombo("##StylePreset",preview)){
+        if(ImGui::Selectable("(Manual LoRA)",selectedStyle_==-1))selectedStyle_=-1;
+        for(size_t i=0;i<styles_.size();++i){const bool selected=selectedStyle_==static_cast<int>(i);if(ImGui::Selectable(styles_[i].name.c_str(),selected)){selectedStyle_=static_cast<int>(i);ApplyStyle(selectedStyle_);}if(selected)ImGui::SetItemDefaultFocus();}
+        ImGui::EndCombo();
+    }
+    if(ImGui::Button("Refresh Styles"))RefreshStyles();
     field("Base Model"); ImGui::InputText("##GenBaseModel",generationBaseModel_.data(),generationBaseModel_.size());
     field("LoRA"); ImGui::SetNextItemWidth(-92); ImGui::InputText("##LoraPath",loraPath_.data(),loraPath_.size()); ImGui::SameLine(); if(ImGui::Button("Browse...##Lora"))SelectLora(owner);
     field("Trigger Word"); ImGui::InputText("##GenTrigger",generationTrigger_.data(),generationTrigger_.size());
@@ -305,6 +353,7 @@ void StyleAIView::DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const Im
     field("Width"); ImGui::InputInt("##GenWidth",&generationWidth_); field("Height"); ImGui::InputInt("##GenHeight",&generationHeight_);
     ImGui::SliderInt("Steps",&generationSteps_,1,100); ImGui::SliderFloat("Guidance Scale",&guidanceScale_,1,20,"%.1f");
     field("Seed (-1 = random)"); ImGui::InputScalar("##GenSeed",ImGuiDataType_S64,&generationSeed_);
+    ImGui::Checkbox("Enable Safety Checker",&enableSafetyChecker_);
     ImGui::BeginDisabled(generationBackend_.IsRunning()); if(ImGui::Button("Generate Image",ImVec2(140,0)))StartGeneration(); ImGui::EndDisabled(); ImGui::SameLine();
     ImGui::BeginDisabled(!generationBackend_.IsRunning()); if(ImGui::Button("Stop##Generate",ImVec2(90,0))){generationBackend_.Stop();generationMessage_="Generation stopped.";} ImGui::EndDisabled();
     if(!generationMessage_.empty())ImGui::TextWrapped("%s",generationMessage_.c_str());
@@ -321,6 +370,7 @@ void StyleAIView::DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const Im
 
 void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& loader) {
     UpdateCaptionResult();
+    if(!stylesLoaded_)RefreshStyles();
     ImGui::SetNextWindowSize(ImVec2(720, 650), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Style AI")) { ImGui::End(); return; }
     if (ImGui::BeginTabBar("StyleAITabs")) {
@@ -328,7 +378,8 @@ void StyleAIView::Draw(HWND owner, GraphicsDevice& graphics, const ImageLoader& 
             ImGui::InputText("Dataset Name", name_.data(), name_.size());
             ImGui::InputText("Dataset Path", path_.data(), path_.size());
             if (ImGui::Button("Create Dataset")) CreateDataset(); ImGui::SameLine();
-            if (ImGui::Button("Load Dataset...")) LoadDataset(owner);
+            if (ImGui::Button("Load Dataset...")) LoadDataset(owner); ImGui::SameLine();
+            ImGui::BeginDisabled(!dataset_.IsOpen());if (ImGui::Button("Save Dataset As")) SaveDatasetAs();ImGui::EndDisabled();
             ImGui::BeginDisabled(!dataset_.IsOpen());
             if (ImGui::Button("Add Images...")) AddImages(owner, graphics, loader); ImGui::SameLine();
             if (ImGui::Button("Add Folder...")) ImportFolders(owner); ImGui::SameLine();

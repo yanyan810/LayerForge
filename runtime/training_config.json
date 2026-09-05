@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dataset": "C:/Users/yanya/Desktop/LayerForge/LayerForge/datasets/MyStyle",
-  "output_name": "MyStyle",
+  "output_name": "SosoStyle",
   "output_dir": "C:/Users/yanya/Desktop/LayerForge/models/lora",
   "base_model": "stable-diffusion-v1-5/stable-diffusion-v1-5",
   "trigger_word": "lfstyle",
