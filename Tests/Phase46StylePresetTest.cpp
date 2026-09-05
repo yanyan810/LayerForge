@@ -20,7 +20,9 @@ int main(int argc,char** argv){
     StylePreset second{"MyStyle_v2",{},"base/model-b","lfstyle_v2",1.25f,768};
     if(!RegisterStylePreset(second,root/"source"/"trained.safetensors",root/"source"/"training_info.json",root/"Styles",error)){std::cerr<<error;return 2;}
     if(RegisterStylePreset(first,root/"source"/"trained.safetensors",{},root/"Styles",error)||error!="Style already exists."){std::cerr<<"Duplicate was not rejected";return 3;}
-    auto styles=ScanStylePresets(root/"Styles",error);if(styles.size()!=2||styles[0].name!="MyStyle"||styles[0].baseModel!="base/model-a"||styles[0].triggerWord!="lfstyle"||styles[0].defaultStrength!=0.75f||styles[1].name!="MyStyle_v2"||styles[1].baseModel!="base/model-b"||styles[1].triggerWord!="lfstyle_v2"||styles[1].defaultStrength!=1.25f){std::cerr<<"Scanned settings do not match";return 4;}
+    first.defaultStrength=.9f;first.defaultPrompt="anime illustration";first.defaultNegativePrompt="blurry";first.defaultSteps=30;first.defaultGuidanceScale=6.5f;
+    if(!RegisterStylePreset(first,root/"source"/"trained.safetensors",root/"source"/"training_info.json",root/"Styles",error,true)){std::cerr<<error;return 6;}
+    auto styles=ScanStylePresets(root/"Styles",error);if(styles.size()!=2||styles[0].name!="MyStyle"||styles[0].baseModel!="base/model-a"||styles[0].triggerWord!="lfstyle"||styles[0].defaultStrength!=.9f||styles[0].defaultPrompt!="anime illustration"||styles[0].defaultSteps!=30||styles[1].name!="MyStyle_v2"||styles[1].baseModel!="base/model-b"||styles[1].triggerWord!="lfstyle_v2"||styles[1].defaultStrength!=1.25f){std::cerr<<"Scanned settings do not match";return 4;}
     if(!std::filesystem::is_regular_file(root/"Styles"/"MyStyle"/"training_info.json")||!std::filesystem::is_regular_file(styles[1].loraPath)){std::cerr<<"Copied files are missing";return 5;}
     std::filesystem::remove_all(root,ec);std::cout<<"Two Style presets registered and switched successfully.\n";return 0;
 }

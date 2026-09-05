@@ -23,25 +23,28 @@ def load_config(path: Path, mode: str) -> dict:
 def main() -> int:
     if len(sys.argv) == 2:
         mode, config_argument = "train", sys.argv[1]
-    elif len(sys.argv) == 3 and sys.argv[1] in {"train", "generate", "caption"}:
+    elif len(sys.argv) == 3 and sys.argv[1] in {"train", "generate", "compare", "caption", "serve"}:
         mode, config_argument = sys.argv[1], sys.argv[2]
     else:
-        return fail("Usage: style_backend.py <train|generate|caption> <config.json>")
+        return fail("Usage: style_backend.py <train|generate|compare|caption|serve> <config.json-or-request-dir>")
     try:
+        if mode == "serve":
+            from generator.generation_server import serve
+            out("Backend started");serve(Path(config_argument),out);return 0
         config = load_config(Path(config_argument), mode)
         out("Backend started")
         if mode == "caption":
             from captioner.auto_tagger import caption_dataset
             out("Auto Caption started"); out(f"Model: {config.get('model', 'SmilingWolf/wd-eva02-large-tagger-v3')}")
             caption_dataset(config,out); out("Complete"); return 0
-        if mode == "generate":
+        if mode in {"generate","compare"}:
             try:
                 import torch
             except ImportError:
                 return fail("Missing Python package: torch. Install backend/requirements.txt")
             if not torch.cuda.is_available(): return fail("CUDA is not available.")
-            from generator.image_generator import generate_image
-            generate_image(config, out); out("Complete"); return 0
+            from generator.image_generator import generate_image,generate_comparison
+            (generate_comparison if mode=="compare" else generate_image)(config, out); out("Complete"); return 0
         from trainer.dataset_loader import load_dataset_items
         items = load_dataset_items(Path(config["dataset"]), str(config.get("trigger_word", "lfstyle")))
         out("Loading dataset...")

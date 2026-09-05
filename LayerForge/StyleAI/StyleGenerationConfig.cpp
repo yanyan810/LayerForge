@@ -13,6 +13,11 @@ bool SaveGenerationConfig(const StyleGenerationConfig& c,const std::filesystem::
      <<"\",\n  \"lora_strength\": "<<c.loraStrength<<",\n  \"width\": "<<c.width<<",\n  \"height\": "<<c.height<<",\n  \"steps\": "<<c.steps
      <<",\n  \"guidance_scale\": "<<c.guidanceScale<<",\n  \"seed\": "<<c.seed
      <<",\n  \"enable_safety_checker\": "<<(c.enableSafetyChecker?"true":"false")
+     <<",\n  \"image_count\": "<<c.imageCount<<",\n  \"style_name\": \""<<Escape(c.styleName)<<"\",\n  \"command\": \""<<Escape(c.command)<<"\",\n  \"adapters\": [";
+    for(size_t i=0;i<c.adapters.size();++i){const auto&a=c.adapters[i];s<<(i?",":"")<<"{\"type\": \""<<Escape(a.type)<<"\", \"path\": \""<<Escape(Utf8(a.path))<<"\", \"strength\": "<<a.strength<<"}";}
+    s<<"],\n  \"comparisons\": [";
+    for(size_t i=0;i<c.comparisons.size();++i){const auto&a=c.comparisons[i];s<<(i?",":"")<<"{\"name\": \""<<Escape(a.name)<<"\", \"path\": \""<<Escape(Utf8(a.path))<<"\", \"strength\": "<<a.strength<<"}";}
+    s<<"]"
      <<",\n  \"output_dir\": \""<<Escape(Utf8(c.outputDirectory))<<"\"\n}\n";
     if(!s){error="Could not finish generation_config.json.";return false;} return true;
 }

@@ -15,16 +15,18 @@ bool JsonNumber(const std::string& j,const char* key,double& value){size_t at=j.
 bool StylePreset::Save(const std::filesystem::path& dir,std::string& error)const{
     error.clear();std::error_code ec;std::filesystem::create_directories(dir,ec);if(ec){error="Could not create Style folder: "+ec.message();return false;}
     std::ofstream s(dir/"style.json",std::ios::binary|std::ios::trunc);if(!s){error="Could not write style.json.";return false;}
-    s<<"{\n  \"version\": 1,\n  \"name\": \""<<Escape(name)<<"\",\n  \"lora_path\": \""<<Escape(Utf8(loraPath.filename()))
+    s<<"{\n  \"version\": 2,\n  \"name\": \""<<Escape(name)<<"\",\n  \"lora_path\": \""<<Escape(Utf8(loraPath.filename()))
      <<"\",\n  \"base_model\": \""<<Escape(baseModel)<<"\",\n  \"trigger_word\": \""<<Escape(triggerWord)
-     <<"\",\n  \"default_strength\": "<<defaultStrength<<",\n  \"resolution\": "<<resolution<<"\n}\n";
+     <<"\",\n  \"default_strength\": "<<defaultStrength<<",\n  \"resolution\": "<<resolution
+     <<",\n  \"default_prompt\": \""<<Escape(defaultPrompt)<<"\",\n  \"default_negative_prompt\": \""<<Escape(defaultNegativePrompt)
+     <<"\",\n  \"default_steps\": "<<defaultSteps<<",\n  \"default_guidance_scale\": "<<defaultGuidanceScale<<"\n}\n";
     if(!s){error="Could not finish style.json.";return false;}return true;
 }
 
 bool StylePreset::Load(const std::filesystem::path& jsonPath,StylePreset& preset,std::string& error){
-    std::string json,lora;if(!Read(jsonPath,json)){error="Could not read "+Utf8(jsonPath);return false;}double strength=1.0,resolution=512;
+    std::string json,lora;if(!Read(jsonPath,json)){error="Could not read "+Utf8(jsonPath);return false;}double strength=1.0,resolution=512,steps=25,guidance=7.0;
     if(!JsonString(json,"name",preset.name)||!JsonString(json,"lora_path",lora)||!JsonString(json,"base_model",preset.baseModel)||!JsonString(json,"trigger_word",preset.triggerWord)){error="Invalid style.json: "+Utf8(jsonPath);return false;}
-    JsonNumber(json,"default_strength",strength);JsonNumber(json,"resolution",resolution);preset.defaultStrength=static_cast<float>(strength);preset.resolution=static_cast<int>(resolution);
+    JsonNumber(json,"default_strength",strength);JsonNumber(json,"resolution",resolution);JsonNumber(json,"default_steps",steps);JsonNumber(json,"default_guidance_scale",guidance);JsonString(json,"default_prompt",preset.defaultPrompt);JsonString(json,"default_negative_prompt",preset.defaultNegativePrompt);preset.defaultStrength=static_cast<float>(strength);preset.resolution=static_cast<int>(resolution);preset.defaultSteps=static_cast<int>(steps);preset.defaultGuidanceScale=static_cast<float>(guidance);std::error_code timeError;preset.lastModified=std::filesystem::last_write_time(jsonPath,timeError);
     const auto stored=FromUtf8(lora);preset.loraPath=stored.is_absolute()?stored:(jsonPath.parent_path()/stored).lexically_normal();return true;
 }
 
@@ -34,9 +36,9 @@ bool IsValidStyleName(const std::string& name,std::string& error){
     if(name.find_first_of("\\/:*?\"<>|")!=std::string::npos){error="Style Name contains an invalid filename character.";return false;}return true;
 }
 
-bool RegisterStylePreset(const StylePreset& preset,const std::filesystem::path& sourceLora,const std::filesystem::path& sourceInfo,const std::filesystem::path& root,std::string& error){
+bool RegisterStylePreset(const StylePreset& preset,const std::filesystem::path& sourceLora,const std::filesystem::path& sourceInfo,const std::filesystem::path& root,std::string& error,bool overwrite){
     if(!IsValidStyleName(preset.name,error))return false;std::error_code ec;if(!std::filesystem::is_regular_file(sourceLora,ec)){error="Training LoRA was not found.";return false;}
-    const auto destination=root/FromUtf8(preset.name);if(std::filesystem::exists(destination,ec)){error="Style already exists.";return false;}
+    const auto destination=root/FromUtf8(preset.name);const bool existed=std::filesystem::exists(destination,ec);if(existed&&!overwrite){error="Style already exists.";return false;}
     std::filesystem::create_directories(root,ec);if(ec){error="Could not create Styles folder: "+ec.message();return false;}
     const auto temporary=root/(".style-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".incomplete");
     std::filesystem::create_directory(temporary,ec);if(ec){error="Could not create temporary Style folder: "+ec.message();return false;}
@@ -45,6 +47,7 @@ bool RegisterStylePreset(const StylePreset& preset,const std::filesystem::path& 
     std::filesystem::copy_file(sourceLora,targetLora,std::filesystem::copy_options::none,ec);if(ec){error="Could not copy LoRA: "+ec.message();cleanup();return false;}
     ec.clear();if(std::filesystem::is_regular_file(sourceInfo,ec)){std::filesystem::copy_file(sourceInfo,temporary/"training_info.json",std::filesystem::copy_options::none,ec);if(ec){error="Could not copy training_info.json: "+ec.message();cleanup();return false;}}
     StylePreset stored=preset;stored.loraPath=targetLora.filename();if(!stored.Save(temporary,error)){cleanup();return false;}
+    if(existed){const auto backup=root/(".style-backup-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));std::filesystem::rename(destination,backup,ec);if(ec){error="Could not prepare Style update: "+ec.message();cleanup();return false;}std::filesystem::rename(temporary,destination,ec);if(ec){std::error_code restore;std::filesystem::rename(backup,destination,restore);error="Could not update Style: "+ec.message();cleanup();return false;}std::filesystem::remove_all(backup,ec);return true;}
     std::filesystem::rename(temporary,destination,ec);if(ec){error="Could not register Style: "+ec.message();cleanup();return false;}return true;
 }
 
