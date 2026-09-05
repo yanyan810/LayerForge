@@ -197,6 +197,7 @@ bool StyleDataset::ReloadCaptions(std::string& error) {
     for(auto& item:items_) if(!ReadText(item.captionPath,item.caption)){error="Could not reload caption: "+Utf8(item.captionPath);return false;}
     error.clear(); return true;
 }
+bool StyleDataset::SetEnabled(size_t index,bool enabled,std::string& error){if(index>=items_.size()){error="No image is selected.";return false;}items_[index].enabled=enabled;return Save(error);}
 
 bool StyleDataset::SaveAs(const std::filesystem::path& path, const std::string& name, std::string& error) {
     if(!IsOpen()){error="No dataset is open.";return false;}

@@ -39,6 +39,8 @@
     <ClInclude Include="StyleAI\StyleGenerationConfig.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="StyleAI\StyleCaptionConfig.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="StyleAI\StylePreset.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StyleAI\TrainingPreset.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StyleAI\GenerationHistory.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AI\AIModelManager.cpp"><Filter>ソース ファイル</Filter></ClCompile>
@@ -61,5 +63,7 @@
     <ClCompile Include="StyleAI\StyleGenerationConfig.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="StyleAI\StyleCaptionConfig.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="StyleAI\StylePreset.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StyleAI\TrainingPreset.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StyleAI\GenerationHistory.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
 </Project>

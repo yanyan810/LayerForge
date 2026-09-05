@@ -87,7 +87,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
        <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -105,7 +105,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
        <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -121,7 +121,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
        <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -139,7 +139,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;windowscodecs.lib;comdlg32.lib;ole32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
        <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -168,6 +168,8 @@
     <ClInclude Include="StyleAI\StyleGenerationConfig.h" />
     <ClInclude Include="StyleAI\StyleCaptionConfig.h" />
     <ClInclude Include="StyleAI\StylePreset.h" />
+    <ClInclude Include="StyleAI\TrainingPreset.h" />
+    <ClInclude Include="StyleAI\GenerationHistory.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
@@ -198,6 +200,8 @@
     <ClCompile Include="StyleAI\StyleGenerationConfig.cpp" />
     <ClCompile Include="StyleAI\StyleCaptionConfig.cpp" />
     <ClCompile Include="StyleAI\StylePreset.cpp" />
+    <ClCompile Include="StyleAI\TrainingPreset.cpp" />
+    <ClCompile Include="StyleAI\GenerationHistory.cpp" />
     <ClCompile Include="WinMain.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />

@@ -19,3 +19,12 @@ runtime/python/Scripts/python.exe -u backend/style_backend.py caption runtime/ca
 ```
 
 CaptionにはDanbooru-style tagsだけを保存し、Trigger WordはTraining時に別途追加されます。
+
+## Phase 5 Generation
+
+- `style.json` version 2は既定Prompt、Negative Prompt、Strength、Steps、Guidanceを保存します。version 1も読み込み可能です。
+- Generation Configは従来の`lora_path`に加えて、将来のCharacter LoRA向けの`adapters`配列に対応します。
+- `image_count`は1回のモデルロードで1～8枚生成します。固定Seedは`baseSeed + index`、`-1`は画像ごとにランダムです。
+- `style_backend.py serve <request-directory>`で常駐workerを起動します。JSON要求の`generate`、`compare`、`unload`、`shutdown`を処理します。
+- Base ModelとSafety Checker設定が同じ場合はPipelineを再利用し、LoRA Adapterだけを交換します。
+- 全生成結果にPNG metadataとHistoryタブ用JSON sidecarを保存します。

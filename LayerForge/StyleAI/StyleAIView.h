@@ -6,6 +6,8 @@
 #include "StyleGenerationConfig.h"
 #include "StyleCaptionConfig.h"
 #include "StylePreset.h"
+#include "TrainingPreset.h"
+#include "GenerationHistory.h"
 #include "../GraphicsDevice.h"
 #include "../ImageData.h"
 #include "../ImageLoader.h"
@@ -27,16 +29,20 @@ private:
     void DrawTrainingTab(HWND owner);
     void StartBackend();
     void DrawGenerateTab(HWND owner, GraphicsDevice& graphics, const ImageLoader& loader);
-    void StartGeneration();
+    void StartGeneration(bool comparison = false);
     void SelectLora(HWND owner);
     void UpdateGeneratedPreview(GraphicsDevice& graphics, const ImageLoader& loader);
     void ImportFolders(HWND owner);
     void StartCaption(bool selectedOnly);
     void UpdateCaptionResult();
     void SaveDatasetAs();
-    void SaveAsStyle();
+    void SaveAsStyle(bool overwrite = false);
     void RefreshStyles();
     void ApplyStyle(int index);
+    void RefreshHistory();
+    void DrawHistoryTab(HWND owner, GraphicsDevice& graphics, const ImageLoader& loader);
+    void ApplyTrainingPreset(int index);
+    void AnalyzeDatasetQuality(const ImageLoader& loader);
 
     StyleDataset dataset_;
     ImageData preview_;
@@ -61,6 +67,7 @@ private:
     StyleAIBackend backend_;
     StyleAIBackend generationBackend_;
     StyleAIBackend captionBackend_;
+    StyleAIBackend persistentGenerationBackend_;
     bool includeSubfolders_=false,skipImported_=true;
     std::array<char,1024> captionModel_{"SmilingWolf/wd-eva02-large-tagger-v3"};
     float generalThreshold_=.35f,characterThreshold_=.85f;
@@ -73,9 +80,11 @@ private:
     std::array<char, 1024> loraPath_{ "Models/lora/MyStyle/MyStyle.safetensors" };
     std::array<char, 256> generationTrigger_{ "lfstyle" };
     std::array<char, 4096> prompt_{};
+    std::array<char, 4096> stylePrompt_{};
     std::array<char, 4096> negativePrompt_{ "low quality, blurry, bad anatomy" };
     float loraStrength_ = 0.8f;
     int generationWidth_ = 512, generationHeight_ = 512, generationSteps_ = 25;
+    int generationImageCount_ = 1;
     float guidanceScale_ = 7.5f;
     int64_t generationSeed_ = -1;
     std::string generationMessage_;
@@ -89,4 +98,22 @@ private:
     int selectedStyle_ = -1;
     bool stylesLoaded_ = false;
     bool enableSafetyChecker_ = false;
+    bool usePersistentBackend_ = true;
+    bool confirmStyleOverwrite_ = false;
+    std::vector<TrainingPreset> trainingPresets_;
+    int selectedTrainingPreset_=-1;
+    std::array<char,128> trainingPresetName_{"Custom"};
+    std::vector<GenerationHistoryEntry> history_;
+    int selectedHistory_=-1;
+    ImageData historyImage_;GraphicsDevice::Texture historyTexture_;
+    std::vector<ImageData> historyThumbnails_;std::vector<GraphicsDevice::Texture> historyThumbnailTextures_;
+    bool historyLoaded_=false,confirmHistoryDelete_=false,historyReloaded_=true;
+    size_t emptyCaptionCount_=0,duplicateCaptionCount_=0,exactDuplicateCount_=0;
+    std::vector<std::pair<size_t,size_t>> similarPairs_;
+    int selectedSimilarPair_=-1;
+    std::vector<uint8_t> compareSelected_;
+    std::vector<ImageData> comparisonImages_;
+    std::vector<GraphicsDevice::Texture> comparisonTextures_;
+    size_t generationLogStart_=0;
+    bool comparisonActive_=false;
 };

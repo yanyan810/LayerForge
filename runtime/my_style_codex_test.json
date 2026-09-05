@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "command": "generate",
+  "base_model": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "lora_path": "C:/Users/yanya/Desktop/LayerForge/Styles/MyStyle/MyStyle.safetensors",
+  "trigger_word": "lfstyle",
+  "prompt": "anime illustration, 1girl, solo, upper body, short silver hair, blue eyes, navy jacket, looking at viewer, soft natural lighting, detailed face, clean background",
+  "negative_prompt": "photorealistic, realistic, 3d, low quality, worst quality, blurry, bad anatomy, bad hands, extra fingers, extra limbs, text, watermark",
+  "lora_strength": 1.0,
+  "adapters": [
+    {
+      "type": "style",
+      "path": "C:/Users/yanya/Desktop/LayerForge/Styles/MyStyle/MyStyle.safetensors",
+      "strength": 1.0
+    }
+  ],
+  "style_name": "MyStyle",
+  "image_count": 1,
+  "width": 512,
+  "height": 512,
+  "steps": 25,
+  "guidance_scale": 7.0,
+  "seed": 24680,
+  "enable_safety_checker": false,
+  "output_dir": "C:/Users/yanya/Desktop/LayerForge/Outputs/Generated"
+}

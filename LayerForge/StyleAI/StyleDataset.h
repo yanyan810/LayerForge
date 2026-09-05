@@ -24,6 +24,7 @@ public:
     [[nodiscard]] bool ContainsSource(const std::filesystem::path& source) const;
     bool ReloadCaptions(std::string& error);
     bool SaveAs(const std::filesystem::path& path, const std::string& name, std::string& error);
+    bool SetEnabled(size_t index, bool enabled, std::string& error);
 
     [[nodiscard]] const std::vector<StyleDatasetItem>& GetItems() const { return items_; }
     [[nodiscard]] const std::filesystem::path& GetPath() const { return datasetPath_; }
